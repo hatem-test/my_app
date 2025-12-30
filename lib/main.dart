@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/auth_service.dart';
+import 'core/providers/app_provider.dart';
 import 'core/router/app_router.dart';
 
 void main() {
@@ -17,6 +18,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => AppProvider()),
         ProxyProvider<AuthService, AppRouter>(
           update: (_, authService, __) => AppRouter(authService),
         ),
@@ -24,12 +26,14 @@ class MyApp extends StatelessWidget {
       child: Builder(
         builder: (context) {
           final router = context.watch<AppRouter>().router;
+          final appProvider = context.watch<AppProvider>();
           return MaterialApp.router(
             title: 'Nursery App',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
+            themeMode: appProvider.themeMode,
             routerConfig: router,
-            locale: const Locale('ar'),
+            locale: appProvider.locale,
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,

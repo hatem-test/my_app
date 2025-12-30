@@ -11,7 +11,7 @@ class AddChildScreen extends StatefulWidget {
 class _AddChildScreenState extends State<AddChildScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
+  DateTime? _birthDate;
   String _selectedGender = 'boy';
 
   @override
@@ -59,14 +59,44 @@ class _AddChildScreenState extends State<AddChildScreen> {
                 validator: (v) => v!.isEmpty ? 'مطلوب' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _ageController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'العمل (بالسنوات)',
-                  prefixIcon: Icon(Icons.cake_outlined),
+              GestureDetector(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2010),
+                    lastDate: DateTime.now(),
+                  );
+                  if (date != null) {
+                    setState(() => _birthDate = date);
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.backgroundSecondary,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today,
+                          color: AppColors.textSecondary),
+                      const SizedBox(width: 12),
+                      Text(
+                        _birthDate == null
+                            ? 'تاريخ الميلاد'
+                            : '${_birthDate!.year}-${_birthDate!.month}-${_birthDate!.day}',
+                        style: TextStyle(
+                          color: _birthDate == null
+                              ? AppColors.textSecondary
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                validator: (v) => v!.isEmpty ? 'مطلوب' : null,
               ),
               const SizedBox(height: 24),
               const Text('النوع',
@@ -98,9 +128,14 @@ class _AddChildScreenState extends State<AddChildScreen> {
               const SizedBox(height: 48),
               ElevatedButton(
                 onPressed: () {
-                  if (_formKey.currentState!.validate()) {
+                  if (_formKey.currentState!.validate() && _birthDate != null) {
                     // Save and pop
                     Navigator.of(context).pop();
+                  } else if (_birthDate == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('الرجاء اختيار تاريخ الميلاد')),
+                    );
                   }
                 },
                 child: const Text('حفظ البيانات'),

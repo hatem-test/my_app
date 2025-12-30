@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/providers/app_provider.dart';
 
 class MotherHomeScreen extends StatelessWidget {
   const MotherHomeScreen({super.key});
@@ -12,6 +14,25 @@ class MotherHomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('أطفالي'),
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language),
+            onPressed: () {
+              final provider = context.read<AppProvider>();
+              provider.setLocale(
+                provider.locale.languageCode == 'ar'
+                    ? const Locale('en')
+                    : const Locale('ar'),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.brightness_medium),
+            onPressed: () {
+              context.read<AppProvider>().toggleTheme();
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

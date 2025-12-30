@@ -3,11 +3,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/services/auth_service.dart';
 import '../../screens/auth/login_screen.dart';
+import '../../screens/auth/role_selection_screen.dart';
+import '../../screens/auth/create_account_screen.dart';
 import '../../screens/mother/child_profile_screen.dart';
 import '../../screens/mother/reports_screen.dart';
 import '../../screens/home_screen.dart'; // Import HomeScreen wrapper
 import '../../screens/mother/add_child_screen.dart';
 import '../../screens/navigation_shell.dart';
+import '../../screens/profile/profile_screen.dart';
 
 class AppRouter {
   final AuthService authService;
@@ -22,8 +25,16 @@ class AppRouter {
     initialLocation: '/',
     routes: [
       GoRoute(
+        path: '/role-selection',
+        builder: (context, state) => const RoleSelectionScreen(),
+      ),
+      GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/create-account',
+        builder: (context, state) => const CreateAccountScreen(),
       ),
       GoRoute(
         path: '/add-child',
@@ -78,8 +89,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/profile',
-                builder: (context, state) =>
-                    const Scaffold(body: Center(child: Text('الملف الشخصي'))),
+                builder: (context, state) => const ProfileScreen(),
               ),
             ],
           ),
@@ -88,13 +98,19 @@ class AppRouter {
     ],
     redirect: (context, state) {
       final isLoggedIn = authService.isAuthenticated;
-      final isLoggingIn = state.uri.toString() == '/login';
-      final isSelectingRole = state.uri.toString() == '/role-selection';
+      final isLoggingIn = state.uri.path == '/login';
+      final isSelectingRole = state.uri.path == '/role-selection';
 
-      if (!isLoggedIn && !isLoggingIn && !isSelectingRole) {
+      final isCreatingAccount = state.uri.path == '/create-account';
+
+      if (!isLoggedIn &&
+          !isLoggingIn &&
+          !isSelectingRole &&
+          !isCreatingAccount) {
         return '/role-selection';
       }
-      if (isLoggedIn && (isLoggingIn || isSelectingRole)) return '/';
+      if (isLoggedIn && (isLoggingIn || isSelectingRole || isCreatingAccount))
+        return '/';
 
       return null;
     },

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/auth_service.dart';
@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigate to Create Account
+                    context.push('/create-account');
                   },
                   child: const Text('ليس لديك حساب؟ أنشئ حساباً جديداً'),
                 ),
