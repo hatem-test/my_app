@@ -11,6 +11,7 @@ import '../../screens/home_screen.dart'; // Import HomeScreen wrapper
 import '../../screens/mother/add_child_screen.dart';
 import '../../screens/navigation_shell.dart';
 import '../../screens/profile/profile_screen.dart';
+import '../../screens/splash_screen.dart';
 
 class AppRouter {
   final AuthService authService;
@@ -22,8 +23,12 @@ class AppRouter {
   late final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     refreshListenable: authService,
-    initialLocation: '/',
+    initialLocation: '/splash',
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/role-selection',
         builder: (context, state) => const RoleSelectionScreen(),
@@ -100,8 +105,12 @@ class AppRouter {
       final isLoggedIn = authService.isAuthenticated;
       final isLoggingIn = state.uri.path == '/login';
       final isSelectingRole = state.uri.path == '/role-selection';
-
       final isCreatingAccount = state.uri.path == '/create-account';
+      final isSplash = state.uri.path == '/splash';
+
+      if (isSplash) {
+        return null;
+      }
 
       if (!isLoggedIn &&
           !isLoggingIn &&
@@ -109,8 +118,9 @@ class AppRouter {
           !isCreatingAccount) {
         return '/role-selection';
       }
-      if (isLoggedIn && (isLoggingIn || isSelectingRole || isCreatingAccount))
+      if (isLoggedIn && (isLoggingIn || isSelectingRole || isCreatingAccount)) {
         return '/';
+      }
 
       return null;
     },
