@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -17,17 +16,24 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
     return Scaffold(
       appBar: AppBar(title: const Text('إنشاء حساب جديد')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(width * 0.06),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.person_add, size: 80, color: AppColors.primary),
-              const SizedBox(height: 32),
+              Image.asset(
+                'assets/images/login_singup.png',
+                width: width * 0.15, // Reduced size
+              ),
+              SizedBox(height: height * 0.04),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -36,7 +42,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 ),
                 validator: (v) => v!.isEmpty ? 'مطلوب' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: height * 0.02),
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
@@ -45,7 +51,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 ),
                 validator: (v) => v!.isEmpty ? 'مطلوب' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: height * 0.02),
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
@@ -56,23 +62,29 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 validator: (v) =>
                     v!.length < 6 ? 'يجب أن تكون 6 أحرف على الأقل' : null,
               ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : () {
-                        if (_formKey.currentState!.validate()) {
-                          // Implement Sign Up Logic
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('تم إنشاء الحساب بنجاح')),
-                          );
-                          Navigator.pop(context);
-                        }
-                      },
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('تسجيل'),
+              SizedBox(height: height * 0.04),
+              SizedBox(
+                height: height * 0.065,
+                child: ElevatedButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          if (_formKey.currentState!.validate()) {
+                            // Implement Sign Up Logic
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('تم إنشاء الحساب بنجاح')),
+                            );
+                            Navigator.pop(context);
+                          }
+                        },
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          'تسجيل',
+                          style: TextStyle(fontSize: width * 0.045),
+                        ),
+                ),
               ),
             ],
           ),

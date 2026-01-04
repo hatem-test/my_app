@@ -30,6 +30,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('الملف الشخصي'),
@@ -53,53 +57,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(width * 0.04),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              const SizedBox(height: 20),
+              SizedBox(height: height * 0.02),
               Stack(
                 children: [
-                  const CircleAvatar(
-                    radius: 60,
+                  CircleAvatar(
+                    radius: width * 0.15,
                     backgroundImage:
-                        AssetImage('assets/profile_placeholder.png'),
+                        const AssetImage('assets/profile_placeholder.png'),
                     backgroundColor: AppColors.backgroundSecondary,
                     child: Icon(Icons.person,
-                        size: 60, color: AppColors.textDisabled),
+                        size: width * 0.15, color: AppColors.textDisabled),
                   ),
                   if (_isEditing)
                     Positioned(
                       bottom: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(width * 0.02),
                         decoration: const BoxDecoration(
                           color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.camera_alt,
-                            color: Colors.white, size: 20),
+                        child: Icon(Icons.camera_alt,
+                            color: Colors.white, size: width * 0.05),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: height * 0.04),
               _buildTextField(
                 label: 'الاسم',
                 controller: _nameController,
                 icon: Icons.person_outline,
                 enabled: _isEditing,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: height * 0.02),
               _buildTextField(
                 label: 'البريد الإلكتروني',
                 controller: _emailController,
                 icon: Icons.email_outlined,
                 enabled: _isEditing,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: height * 0.02),
               _buildTextField(
                 label: 'رقم الهاتف',
                 controller: _phoneController,
@@ -108,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 prefixText: '+963 ',
                 keyboardType: TextInputType.phone,
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: height * 0.05),
               if (!_isEditing) ...[
                 _buildActionTile(
                   title: 'تغيير كلمة المرور',
@@ -174,25 +178,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      onTap: onTap,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          shape: BoxShape.circle,
+    return Builder(builder: (context) {
+      final width = MediaQuery.of(context).size.width;
+      return ListTile(
+        onTap: onTap,
+        leading: Container(
+          padding: EdgeInsets.all(width * 0.02),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: width * 0.06),
         ),
-        child: Icon(icon, color: color),
-      ),
-      title: Text(
-        title,
-        style: GoogleFonts.cairo(
-          fontWeight: FontWeight.bold,
-          color: color,
+        title: Text(
+          title,
+          style: GoogleFonts.cairo(
+            fontWeight: FontWeight.bold,
+            color: color,
+            fontSize: width * 0.04,
+          ),
         ),
-      ),
-      trailing: Icon(Icons.arrow_forward_ios,
-          size: 16, color: color.withValues(alpha: 0.5)),
-    );
+        trailing: Icon(Icons.arrow_forward_ios,
+            size: width * 0.04, color: color.withValues(alpha: 0.5)),
+      );
+    });
   }
 }

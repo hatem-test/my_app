@@ -10,13 +10,17 @@ class MotherHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('أطفالي'),
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.language),
+            icon: Icon(Icons.language, size: width * 0.06), // Responsive icon
             onPressed: () {
               final provider = context.read<AppProvider>();
               provider.setLocale(
@@ -27,7 +31,7 @@ class MotherHomeScreen extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.brightness_medium),
+            icon: Icon(Icons.brightness_medium, size: width * 0.06),
             onPressed: () {
               context.read<AppProvider>().toggleTheme();
             },
@@ -35,20 +39,21 @@ class MotherHomeScreen extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(width * 0.04),
         children: [
           _buildChildCard(
               context, 'أحمد محمد', '4 سنوات', 'assets/boy_1.png', Colors.blue),
           _buildChildCard(context, 'سارة محمد', '3 سنوات', 'assets/girl_1.png',
               Colors.pink),
-          const SizedBox(height: 80), // Fab space
+          SizedBox(height: height * 0.1), // Fab space
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/add-child'),
         label: Text('إضافة طفل',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
-        icon: const Icon(Icons.add),
+            style: GoogleFonts.cairo(
+                fontWeight: FontWeight.bold, fontSize: width * 0.04)),
+        icon: Icon(Icons.add, size: width * 0.06),
         backgroundColor: AppColors.accent,
       ),
     );
@@ -56,53 +61,62 @@ class MotherHomeScreen extends StatelessWidget {
 
   Widget _buildChildCard(BuildContext context, String name, String age,
       String image, Color color) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+
     return Card(
+      margin: EdgeInsets.only(bottom: width * 0.04),
       child: InkWell(
         onTap: () => context.push('/child/123'), // Mock ID
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(width * 0.04),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(width * 0.04),
           child: Row(
             children: [
               Container(
-                width: 80,
-                height: 80,
+                width: width * 0.2,
+                height: width * 0.2,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(width * 0.03),
                   border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
                 child: Center(
-                  child: Icon(Icons.face, size: 48, color: color),
+                  child: Icon(Icons.face, size: width * 0.12, color: color),
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: width * 0.04),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       name,
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontSize: width * 0.055,
+                              ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: width * 0.01),
                     Text(
                       age,
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: width * 0.04,
+                          ),
                     ),
-                    const SizedBox(height: 8),
-                    const Row(
+                    SizedBox(height: width * 0.02),
+                    Row(
                       children: [
                         _StatusChip(label: 'ممتاز', color: AppColors.success),
-                        SizedBox(width: 8),
+                        SizedBox(width: width * 0.02),
                         _StatusChip(label: 'حضور', color: AppColors.primary),
                       ],
                     )
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios,
-                  color: AppColors.textDisabled, size: 16),
+              Icon(Icons.arrow_forward_ios,
+                  color: AppColors.textDisabled, size: width * 0.04),
             ],
           ),
         ),
@@ -119,8 +133,11 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: EdgeInsets.symmetric(
+          horizontal: width * 0.03, vertical: width * 0.01),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(100),
@@ -130,7 +147,7 @@ class _StatusChip extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.bold,
-          fontSize: 12,
+          fontSize: width * 0.03,
         ),
       ),
     );

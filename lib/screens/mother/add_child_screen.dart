@@ -16,10 +16,14 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
     return Scaffold(
       appBar: AppBar(title: const Text('إضافة طفل')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(width * 0.06),
         child: Form(
           key: _formKey,
           child: Column(
@@ -31,25 +35,26 @@ class _AddChildScreenState extends State<AddChildScreen> {
                 },
                 child: Center(
                   child: Container(
-                    width: 120,
-                    height: 120,
+                    width: width * 0.3,
+                    height: width * 0.3,
                     decoration: BoxDecoration(
                       color: AppColors.backgroundSecondary,
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.primary, width: 2),
                     ),
-                    child: const Icon(Icons.add_a_photo,
-                        size: 40, color: AppColors.textSecondary),
+                    child: Icon(Icons.add_a_photo,
+                        size: width * 0.1, color: AppColors.textSecondary),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              SizedBox(height: height * 0.01),
+              Text(
                 'صورة الطفل',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(
+                    color: AppColors.textSecondary, fontSize: width * 0.035),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: height * 0.04),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -58,7 +63,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                 ),
                 validator: (v) => v!.isEmpty ? 'مطلوب' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: height * 0.02),
               GestureDetector(
                 onTap: () async {
                   final date = await showDatePicker(
@@ -72,18 +77,18 @@ class _AddChildScreenState extends State<AddChildScreen> {
                   }
                 },
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: width * 0.03, vertical: height * 0.02),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(width * 0.03),
                     color: AppColors.backgroundSecondary,
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today,
-                          color: AppColors.textSecondary),
-                      const SizedBox(width: 12),
+                      Icon(Icons.calendar_today,
+                          color: AppColors.textSecondary, size: width * 0.06),
+                      SizedBox(width: width * 0.03),
                       Text(
                         _birthDate == null
                             ? 'تاريخ الميلاد'
@@ -92,16 +97,18 @@ class _AddChildScreenState extends State<AddChildScreen> {
                           color: _birthDate == null
                               ? AppColors.textSecondary
                               : AppColors.textPrimary,
+                          fontSize: width * 0.04,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text('النوع',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
+              SizedBox(height: height * 0.03),
+              Text('النوع',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: width * 0.04)),
+              SizedBox(height: height * 0.01),
               Row(
                 children: [
                   Expanded(
@@ -113,7 +120,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                       color: Colors.blue,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: width * 0.04),
                   Expanded(
                     child: _GenderCard(
                       label: 'بنت',
@@ -125,7 +132,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 48),
+              SizedBox(height: height * 0.06),
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate() && _birthDate != null) {
@@ -138,7 +145,8 @@ class _AddChildScreenState extends State<AddChildScreen> {
                     );
                   }
                 },
-                child: const Text('حفظ البيانات'),
+                child: Text('حفظ البيانات',
+                    style: TextStyle(fontSize: width * 0.045)),
               ),
             ],
           ),
@@ -165,15 +173,18 @@ class _GenderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: height * 0.02),
         decoration: BoxDecoration(
           color: isSelected
               ? color.withValues(alpha: 0.1)
               : AppColors.backgroundSecondary,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(width * 0.03),
           border: Border.all(
             color: isSelected ? color : Colors.transparent,
             width: 2,
@@ -182,13 +193,15 @@ class _GenderCard extends StatelessWidget {
         child: Column(
           children: [
             Icon(icon,
-                size: 40, color: isSelected ? color : AppColors.textDisabled),
-            const SizedBox(height: 8),
+                size: width * 0.1,
+                color: isSelected ? color : AppColors.textDisabled),
+            SizedBox(height: height * 0.01),
             Text(
               label,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: isSelected ? color : AppColors.textDisabled,
+                fontSize: width * 0.04,
               ),
             ),
           ],
