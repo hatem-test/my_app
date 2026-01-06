@@ -54,6 +54,14 @@ class RoleSelectionScreen extends StatelessWidget {
                   color: AppColors.accent,
                   onTap: () => context.push('/login?role=admin'),
                 ),
+                SizedBox(height: height * 0.05),
+                Center(
+                  child: Image.asset(
+                    'assets/images/role_selection_img.png',
+                    width: width * 0.8,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ],
             ),
           ),

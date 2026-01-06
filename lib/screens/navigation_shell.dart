@@ -12,42 +12,140 @@ class NavigationShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
-        backgroundColor: Colors.white,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.2),
-        elevation: 2,
-        shadowColor: AppColors.shadow,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: AppColors.primary),
-            label: 'الرئيسية',
+      bottomNavigationBar: Container(
+        height: 70 + MediaQuery.of(context).padding.bottom / 2,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications, color: AppColors.primary),
-            label: 'الإشعارات',
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 10,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _NavBarItem(
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                label: 'الرئيسية',
+                isSelected: navigationShell.currentIndex == 0,
+                onTap: () => _onTap(context, 0),
+                width: width,
+              ),
+              _NavBarItem(
+                icon: Icons.notifications_outlined,
+                activeIcon: Icons.notifications,
+                label: 'الإشعارات',
+                isSelected: navigationShell.currentIndex == 1,
+                onTap: () => _onTap(context, 1),
+                width: width,
+              ),
+              _NavBarItem(
+                icon: Icons.chat_bubble_outline,
+                activeIcon: Icons.chat_bubble,
+                label: 'الدردشة',
+                isSelected: navigationShell.currentIndex == 2,
+                onTap: () => _onTap(context, 2),
+                width: width,
+              ),
+              _NavBarItem(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: 'الحساب',
+                isSelected: navigationShell.currentIndex == 3,
+                onTap: () => _onTap(context, 3),
+                width: width,
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble, color: AppColors.primary),
-            label: 'الدردشة الذكية',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: AppColors.primary),
-            label: 'الحساب',
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  void _onTap(BuildContext context, int index) {
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
+}
+
+class _NavBarItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final double width;
+
+  const _NavBarItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.width,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: width * 0.02),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSlide(
+              offset: isSelected ? const Offset(0, -0.2) : Offset.zero,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                size: width * 0.07,
+              ),
+            ),
+            AnimatedOpacity(
+              opacity: isSelected ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: isSelected
+                  ? Text(
+                      label,
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: width * 0.03,
+                      ),
+                    )
+                  : const SizedBox(),
+            ),
+            if (isSelected)
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                    color: AppColors.primary, shape: BoxShape.circle),
+              )
+          ],
+        ),
       ),
     );
   }

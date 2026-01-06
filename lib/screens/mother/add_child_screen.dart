@@ -109,28 +109,75 @@ class _AddChildScreenState extends State<AddChildScreen> {
                   style: TextStyle(
                       fontWeight: FontWeight.bold, fontSize: width * 0.04)),
               SizedBox(height: height * 0.01),
-              Row(
-                children: [
-                  Expanded(
-                    child: _GenderCard(
-                      label: 'ولد',
-                      icon: Icons.boy,
-                      isSelected: _selectedGender == 'boy',
-                      onTap: () => setState(() => _selectedGender = 'boy'),
-                      color: Colors.blue,
-                    ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                    horizontal: width * 0.03, vertical: height * 0.005),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: _selectedGender == 'boy' ? Colors.blue : Colors.pink,
+                    width: 2,
                   ),
-                  SizedBox(width: width * 0.04),
-                  Expanded(
-                    child: _GenderCard(
-                      label: 'بنت',
-                      icon: Icons.girl,
-                      isSelected: _selectedGender == 'girl',
-                      onTap: () => setState(() => _selectedGender = 'girl'),
-                      color: Colors.pink,
+                  borderRadius: BorderRadius.circular(width * 0.03),
+                  color: (_selectedGender == 'boy' ? Colors.blue : Colors.pink)
+                      .withValues(alpha: 0.1),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedGender,
+                    isExpanded: true,
+                    icon: Icon(
+                      Icons.arrow_drop_down,
+                      color:
+                          _selectedGender == 'boy' ? Colors.blue : Colors.pink,
+                      size: width * 0.08,
                     ),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'boy',
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ولد',
+                              style: TextStyle(
+                                fontSize: width * 0.04,
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(width: width * 0.02),
+                            Icon(Icons.boy,
+                                color: Colors.blue, size: width * 0.06),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'girl',
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              'بنت',
+                              style: TextStyle(
+                                fontSize: width * 0.04,
+                                color: Colors.pink,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(width: width * 0.02),
+                            Icon(Icons.girl,
+                                color: Colors.pink, size: width * 0.06),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedGender = value);
+                      }
+                    },
                   ),
-                ],
+                ),
               ),
               SizedBox(height: height * 0.06),
               ElevatedButton(
@@ -150,61 +197,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GenderCard extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Color color;
-
-  const _GenderCard({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final height = MediaQuery.of(context).size.height;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: height * 0.02),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withValues(alpha: 0.1)
-              : AppColors.backgroundSecondary,
-          borderRadius: BorderRadius.circular(width * 0.03),
-          border: Border.all(
-            color: isSelected ? color : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon,
-                size: width * 0.1,
-                color: isSelected ? color : AppColors.textDisabled),
-            SizedBox(height: height * 0.01),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isSelected ? color : AppColors.textDisabled,
-                fontSize: width * 0.04,
-              ),
-            ),
-          ],
         ),
       ),
     );

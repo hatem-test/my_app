@@ -19,30 +19,34 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => AppProvider()),
-        ProxyProvider<AuthService, AppRouter>(
-          update: (_, authService, __) => AppRouter(authService),
-        ),
       ],
       child: Builder(
         builder: (context) {
-          final router = context.watch<AppRouter>().router;
-          final appProvider = context.watch<AppProvider>();
-          return MaterialApp.router(
-            title: 'Nursery App',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            themeMode: appProvider.themeMode,
-            routerConfig: router,
-            locale: appProvider.locale,
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('ar'),
-              Locale('en'),
-            ],
+          return Provider<AppRouter>(
+            create: (_) => AppRouter(context.read<AuthService>()),
+            child: Builder(
+              builder: (context) {
+                final router = context.read<AppRouter>().router;
+                final appProvider = context.watch<AppProvider>();
+                return MaterialApp.router(
+                  title: 'Nursery App',
+                  debugShowCheckedModeBanner: false,
+                  theme: AppTheme.lightTheme,
+                  themeMode: appProvider.themeMode,
+                  routerConfig: router,
+                  locale: appProvider.locale,
+                  localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  supportedLocales: const [
+                    Locale('ar'),
+                    Locale('en'),
+                  ],
+                );
+              },
+            ),
           );
         },
       ),
