@@ -7,11 +7,20 @@ import '../../screens/auth/role_selection_screen.dart';
 import '../../screens/auth/create_account_screen.dart';
 import '../../screens/mother/child_profile_screen.dart';
 import '../../screens/mother/reports_screen.dart';
-import '../../screens/home_screen.dart'; // Import HomeScreen wrapper
+import '../../screens/home_screen.dart';
 import '../../screens/mother/add_child_screen.dart';
 import '../../screens/navigation_shell.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/splash_screen.dart';
+
+// Teacher screens
+import '../../screens/teacher/teacher_main_screen.dart';
+import '../../screens/teacher/child_profile_screen.dart' as teacher;
+import '../../screens/teacher/create_report_screen.dart';
+import '../../screens/teacher/meals_screen.dart';
+import '../../screens/teacher/health_screen.dart';
+import '../../screens/teacher/notes_screen.dart';
+import '../../screens/teacher/contact_screen.dart';
 
 class AppRouter {
   final AuthService authService;
@@ -43,8 +52,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/add-child',
-        parentNavigatorKey:
-            _rootNavigatorKey, // Define this key or let it default. For now assume push
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const AddChildScreen(),
       ),
       GoRoute(
@@ -58,6 +66,55 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ReportsScreen(),
       ),
+
+      // Teacher Routes
+      GoRoute(
+        path: '/teacher',
+        builder: (context, state) => const TeacherMainScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/child/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            teacher.ChildProfileScreen(childId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/teacher/report',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const CreateReportScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/report/:childId',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            CreateReportScreen(childId: state.pathParameters['childId']),
+      ),
+      GoRoute(
+        path: '/teacher/meals/:childId',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            MealsScreen(childId: state.pathParameters['childId']),
+      ),
+      GoRoute(
+        path: '/teacher/health/:childId',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            HealthScreen(childId: state.pathParameters['childId']),
+      ),
+      GoRoute(
+        path: '/teacher/notes/:childId',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            NotesScreen(childId: state.pathParameters['childId']),
+      ),
+      GoRoute(
+        path: '/teacher/contact/:childId',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            ContactScreen(childId: state.pathParameters['childId']),
+      ),
+
+      // Mother navigation shell
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return NavigationShell(navigationShell: navigationShell);
@@ -67,8 +124,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/',
-                builder: (context, state) =>
-                    const HomeScreen(), // Use Role-Based Home
+                builder: (context, state) => const HomeScreen(),
               ),
             ],
           ),
@@ -103,6 +159,7 @@ class AppRouter {
     ],
     redirect: (context, state) {
       final isLoggedIn = authService.isAuthenticated;
+      final userRole = authService.currentUser?.role;
       final isLoggingIn = state.uri.path == '/login';
       final isSelectingRole = state.uri.path == '/role-selection';
       final isCreatingAccount = state.uri.path == '/create-account';
@@ -118,7 +175,12 @@ class AppRouter {
           !isCreatingAccount) {
         return '/role-selection';
       }
+
       if (isLoggedIn && (isLoggingIn || isSelectingRole || isCreatingAccount)) {
+        // Redirect based on user role
+        if (userRole?.name == 'teacher') {
+          return '/teacher';
+        }
         return '/';
       }
 

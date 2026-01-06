@@ -30,7 +30,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
-        titleTextStyle: GoogleFonts.cairo(
+        titleTextStyle: GoogleFonts.tajawal(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.white,
@@ -45,42 +45,42 @@ class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          textStyle: GoogleFonts.cairo(
+          textStyle: GoogleFonts.tajawal(
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.cairo(
+        displayLarge: GoogleFonts.tajawal(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        displayMedium: GoogleFonts.cairo(
+        displayMedium: GoogleFonts.tajawal(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        displaySmall: GoogleFonts.cairo(
+        displaySmall: GoogleFonts.tajawal(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        headlineMedium: GoogleFonts.cairo(
+        headlineMedium: GoogleFonts.tajawal(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        bodyLarge: GoogleFonts.cairo(
+        bodyLarge: GoogleFonts.tajawal(
           fontSize: 16,
           color: AppColors.textPrimary,
         ),
-        bodyMedium: GoogleFonts.cairo(
+        bodyMedium: GoogleFonts.tajawal(
           fontSize: 14,
           color: AppColors.textSecondary,
         ),
-        labelLarge: GoogleFonts.cairo(
+        labelLarge: GoogleFonts.tajawal(
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: AppColors.primary,
@@ -142,7 +142,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
-        titleTextStyle: GoogleFonts.cairo(
+        titleTextStyle: GoogleFonts.tajawal(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.white,
@@ -157,42 +157,42 @@ class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          textStyle: GoogleFonts.cairo(
+          textStyle: GoogleFonts.tajawal(
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.cairo(
+        displayLarge: GoogleFonts.tajawal(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        displayMedium: GoogleFonts.cairo(
+        displayMedium: GoogleFonts.tajawal(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        displaySmall: GoogleFonts.cairo(
+        displaySmall: GoogleFonts.tajawal(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        headlineMedium: GoogleFonts.cairo(
+        headlineMedium: GoogleFonts.tajawal(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        bodyLarge: GoogleFonts.cairo(
+        bodyLarge: GoogleFonts.tajawal(
           fontSize: 16,
           color: Colors.white,
         ),
-        bodyMedium: GoogleFonts.cairo(
+        bodyMedium: GoogleFonts.tajawal(
           fontSize: 14,
           color: Colors.grey[300],
         ),
-        labelLarge: GoogleFonts.cairo(
+        labelLarge: GoogleFonts.tajawal(
           fontSize: 14,
           fontWeight: FontWeight.bold,
           color: AppColors.primary,

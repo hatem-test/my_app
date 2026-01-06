@@ -20,11 +20,24 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await context.read<AuthService>().login(
+        // Get role from query parameter
+        final uri = GoRouterState.of(context).uri;
+        final role = uri.queryParameters['role'] ?? 'mother';
+
+        await context.read<AuthService>().loginWithRole(
               _emailController.text,
               _passwordController.text,
+              role,
             );
-        // Navigation is handled by Router stream
+
+        // Navigate based on role
+        if (mounted) {
+          if (role == 'teacher') {
+            context.go('/teacher');
+          } else {
+            context.go('/');
+          }
+        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

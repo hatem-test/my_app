@@ -34,6 +34,38 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loginWithRole(
+      String email, String password, String roleString) async {
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 1));
+
+    UserRole role;
+    String name;
+
+    switch (roleString) {
+      case 'teacher':
+        role = UserRole.teacher;
+        name = "سارة المعلمة";
+        break;
+      case 'admin':
+        role = UserRole.admin;
+        name = "المدير";
+        break;
+      default:
+        role = UserRole.mother;
+        name = "فاطمة";
+    }
+
+    _currentUser = UserModel(
+      id: "123",
+      email: email,
+      name: name,
+      role: role,
+    );
+    _isAuthenticated = true;
+    notifyListeners();
+  }
+
   Future<void> register(
       String email, String password, String name, UserRole role) async {
     await Future.delayed(const Duration(seconds: 1));
