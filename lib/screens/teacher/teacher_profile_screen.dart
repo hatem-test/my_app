@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/auth_service.dart';
 
 class TeacherProfileScreen extends StatelessWidget {
   const TeacherProfileScreen({super.key});
@@ -221,7 +223,8 @@ class TeacherProfileScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    context.go('/login');
+                    context.read<AuthService>().logout();
+                    context.go('/role-selection');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.error,

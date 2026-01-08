@@ -92,39 +92,55 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
     required bool isSmallScreen,
   }) {
     final isSelected = _currentIndex == index;
+    final width = MediaQuery.of(context).size.width;
+
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: isSmallScreen ? 8 : 14,
-          vertical: 6,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withOpacity(0.15)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: width * 0.02),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
-              size: isSmallScreen ? 20 : 24,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: isSmallScreen ? 10 : 11,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            // Animated icon slide up
+            AnimatedSlide(
+              offset: isSelected ? const Offset(0, -0.2) : Offset.zero,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: Icon(
+                icon,
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                size: width * 0.07,
               ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
             ),
+            // Animated label fade in/out
+            AnimatedOpacity(
+              opacity: isSelected ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: isSelected
+                  ? Text(
+                      label,
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: width * 0.03,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            // Indicator dot
+            if (isSelected)
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
           ],
         ),
       ),

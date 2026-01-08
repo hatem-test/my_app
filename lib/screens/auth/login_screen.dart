@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // SizedBox(height: height * 0.05), // Move image down slightly
                 Image.asset(
                   'assets/images/login_singup.png',
-                  width: width * 0.25, // Reduced size to not dominate
+                  width: width * 0.10, // Reduced size to not dominate
                   fit: BoxFit.contain, // Ensure proper scaling
                 ),
                 SizedBox(height: height * 0.03),
