@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 
 class ContactScreen extends StatelessWidget {
@@ -18,6 +19,7 @@ class ContactScreen extends StatelessWidget {
       'phone': '+963 912 345 678',
       'email': 'fatima@email.com',
       'relationship': 'الأم',
+      'address': 'دمشق - المزة - جانب الحديقة',
     };
 
     return Directionality(
@@ -41,7 +43,7 @@ class ContactScreen extends StatelessWidget {
                 subtitle: contactInfo['phone'],
                 color: AppColors.success,
                 isSmallScreen: isSmallScreen,
-                onTap: () {},
+                onTap: () => _makePhoneCall(contactInfo['phone']),
               ),
               _buildContactOption(
                 icon: Icons.email_rounded,
@@ -49,7 +51,7 @@ class ContactScreen extends StatelessWidget {
                 subtitle: contactInfo['email'],
                 color: AppColors.primary,
                 isSmallScreen: isSmallScreen,
-                onTap: () {},
+                onTap: () => _sendEmail(contactInfo['email']),
               ),
               _buildContactOption(
                 icon: Icons.message_rounded,
@@ -57,7 +59,7 @@ class ContactScreen extends StatelessWidget {
                 subtitle: 'إرسال رسالة SMS',
                 color: AppColors.accent,
                 isSmallScreen: isSmallScreen,
-                onTap: () {},
+                onTap: () => _sendSMS(contactInfo['phone']),
               ),
               SizedBox(height: isSmallScreen ? 18 : 24),
               _buildInfoCard(contactInfo, isSmallScreen),
@@ -70,6 +72,7 @@ class ContactScreen extends StatelessWidget {
 
   Widget _buildContactHeader(Map<String, dynamic> info, bool isSmallScreen) {
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.all(isSmallScreen ? 18 : 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -85,11 +88,11 @@ class ContactScreen extends StatelessWidget {
               offset: const Offset(0, 10))
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
           Container(
-            width: isSmallScreen ? 70 : 90,
-            height: isSmallScreen ? 70 : 90,
+            width: isSmallScreen ? 60 : 80,
+            height: isSmallScreen ? 60 : 80,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -101,25 +104,33 @@ class ContactScreen extends StatelessWidget {
               ],
             ),
             child: Icon(Icons.person_rounded,
-                size: isSmallScreen ? 36 : 45, color: AppColors.primary),
+                size: isSmallScreen ? 34 : 40, color: AppColors.primary),
           ),
-          SizedBox(height: isSmallScreen ? 12 : 16),
-          Text(info['motherName'],
-              style: TextStyle(
-                  fontSize: isSmallScreen ? 18 : 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white)),
-          const SizedBox(height: 4),
-          Container(
-            padding: EdgeInsets.symmetric(
-                horizontal: isSmallScreen ? 10 : 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
+          SizedBox(width: isSmallScreen ? 16 : 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(info['motherName'],
+                    style: TextStyle(
+                        fontSize: isSmallScreen ? 18 : 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+                const SizedBox(height: 6),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 10 : 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(info['relationship'],
+                      style: TextStyle(
+                          fontSize: isSmallScreen ? 12 : 14,
+                          color: Colors.white)),
+                ),
+              ],
             ),
-            child: Text(info['relationship'],
-                style: TextStyle(
-                    fontSize: isSmallScreen ? 12 : 14, color: Colors.white)),
           ),
         ],
       ),
@@ -222,6 +233,7 @@ class ContactScreen extends StatelessWidget {
           SizedBox(height: isSmallScreen ? 12 : 16),
           _buildInfoRow('العلاقة', info['relationship'], isSmallScreen),
           _buildInfoRow('رقم الطوارئ', info['phone'], isSmallScreen),
+          _buildInfoRow('عنوان السكن', info['address'], isSmallScreen),
         ],
       ),
     );
@@ -237,13 +249,46 @@ class ContactScreen extends StatelessWidget {
               style: TextStyle(
                   fontSize: isSmallScreen ? 12 : 14,
                   color: AppColors.textSecondary)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: isSmallScreen ? 12 : 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary)),
+          Expanded(
+            child: Text(value,
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                    fontSize: isSmallScreen ? 12 : 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary)),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber.replaceAll(' ', ''),
+    );
+    if (!await launchUrl(launchUri)) {
+      debugPrint('Could not launch $launchUri');
+    }
+  }
+
+  Future<void> _sendEmail(String email) async {
+    final Uri launchUri = Uri(
+      scheme: 'mailto',
+      path: email,
+    );
+    if (!await launchUrl(launchUri)) {
+      debugPrint('Could not launch $launchUri');
+    }
+  }
+
+  Future<void> _sendSMS(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'sms',
+      path: phoneNumber.replaceAll(' ', ''),
+    );
+    if (!await launchUrl(launchUri)) {
+      debugPrint('Could not launch $launchUri');
+    }
   }
 }
