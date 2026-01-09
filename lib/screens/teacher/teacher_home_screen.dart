@@ -206,7 +206,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                   Text(
                     'إنشاء تقرير يومي جديد',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontSize: isSmallScreen ? 12 : 14,
                         ),
                   ),
@@ -251,7 +251,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
             CircleAvatar(
               radius: isSmallScreen ? 22 : 26,
               backgroundColor: isBoy
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : const Color(0xFFFCE4EC),
               backgroundImage: AssetImage(imagePath),
             ),

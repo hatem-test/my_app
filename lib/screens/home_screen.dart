@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/services/auth_service.dart';
-import '../../models/user_model.dart';
+import '../core/providers/auth_provider.dart';
+import '../models/models.dart';
 import 'mother/mother_home_screen.dart';
 import 'teacher/teacher_home_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
@@ -11,7 +11,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthService>().currentUser;
+    final user = context.watch<AuthProvider>().currentUser;
 
     if (user == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));

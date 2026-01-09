@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/services/auth_service.dart';
+import '../../core/providers/auth_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,18 +13,27 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: 'أحمد محمد'); // Mock data
-  final _emailController =
-      TextEditingController(text: 'ahmed@example.com'); // Mock data
-  final _phoneController = TextEditingController();
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
 
   bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
-    // Default phone without +963 (will be added in UI prefix)
-    _phoneController.text = '912345678';
+    final user = context.read<AuthProvider>().currentUser;
+    _nameController = TextEditingController(text: user?.name ?? '');
+    _emailController = TextEditingController(text: user?.email ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    super.dispose();
   }
 
   @override
@@ -33,6 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
+    final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -43,7 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () {
               if (_isEditing) {
                 if (_formKey.currentState!.validate()) {
-                  // Save changes
+                  // TODO: Implement Save changes via Service/Repository
                   setState(() => _isEditing = false);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('تم حفظ التغييرات بنجاح')),
@@ -67,10 +76,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: width * 0.15,
-                    // backgroundImage: const AssetImage('assets/profile_placeholder.png'), // Asset missing
                     backgroundColor: AppColors.backgroundSecondary,
-                    child: Icon(Icons.person,
-                        size: width * 0.15, color: AppColors.textDisabled),
+                    child: authProvider.currentUser?.profileImageUrl != null
+                        ? ClipOval(
+                            child: Image.network(
+                              authProvider.currentUser!.profileImageUrl!,
+                              width: width * 0.3,
+                              height: width * 0.3,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Icon(Icons.person,
+                            size: width * 0.15, color: AppColors.textDisabled),
                   ),
                   if (_isEditing)
                     Positioned(
@@ -100,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label: 'البريد الإلكتروني',
                 controller: _emailController,
                 icon: Icons.email_outlined,
-                enabled: _isEditing,
+                enabled: false, // Email usually read-only
               ),
               SizedBox(height: height * 0.02),
               _buildTextField(
@@ -108,7 +125,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: _phoneController,
                 icon: Icons.phone_outlined,
                 enabled: _isEditing,
-                prefixText: '+963 ',
                 keyboardType: TextInputType.phone,
               ),
               SizedBox(height: height * 0.05),
@@ -125,8 +141,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: 'تسجيل الخروج',
                   icon: Icons.logout,
                   color: Colors.orange,
-                  onTap: () {
-                    context.read<AuthService>().logout();
+                  onTap: () async {
+                    await authProvider.logout();
                   },
                 ),
                 _buildActionTile(

@@ -3,7 +3,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
-import 'core/services/auth_service.dart';
+import 'repositories/auth_repository.dart';
+import 'services/auth_service.dart';
+import 'core/providers/auth_provider.dart';
 import 'core/providers/app_provider.dart';
 import 'core/router/app_router.dart';
 import 'services/supabase_config.dart';
@@ -24,13 +26,19 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
+        Provider(create: (_) => AuthRepository()),
+        ProxyProvider<AuthRepository, AuthService>(
+          update: (_, repo, __) => AuthService(repo),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => AuthProvider(context.read<AuthService>()),
+        ),
         ChangeNotifierProvider(create: (_) => AppProvider()),
       ],
       child: Builder(
         builder: (context) {
           return Provider<AppRouter>(
-            create: (_) => AppRouter(context.read<AuthService>()),
+            create: (_) => AppRouter(context.read<AuthProvider>()),
             child: Builder(
               builder: (context) {
                 final router = context.read<AppRouter>().router;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../core/services/auth_service.dart';
+import '../../core/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,40 +14,28 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
 
   void _login() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        // Get role from query parameter
-        final uri = GoRouterState.of(context).uri;
-        final role = uri.queryParameters['role'] ?? 'mother';
+      final authProvider = context.read<AuthProvider>();
 
-        await context.read<AuthService>().loginWithRole(
-              _emailController.text,
-              _passwordController.text,
-              role,
-            );
+      final success = await authProvider.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
 
-        // Navigate based on role
-        if (mounted) {
-          if (role == 'teacher') {
-            context.go('/teacher');
-          } else if (role == 'admin') {
-            context.go('/admin');
-          } else {
-            context.go('/');
-          }
-        }
-      } catch (e) {
-        if (mounted) {
+      if (mounted) {
+        if (success) {
+          // GoRouter redirect will handle navigation based on role
+          context.go('/');
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('فشل تسجيل الدخول: $e')),
+            SnackBar(
+              content: Text(authProvider.errorMessage ?? 'فشل تسجيل الدخول'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -106,14 +94,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(height: height * 0.03),
                 SizedBox(
                   height: height * 0.065,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                            'دخول',
-                            style: TextStyle(fontSize: width * 0.045),
-                          ),
+                  child: Consumer<AuthProvider>(
+                    builder: (context, auth, _) => ElevatedButton(
+                      onPressed: auth.isLoading ? null : _login,
+                      child: auth.isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              'دخول',
+                              style: TextStyle(fontSize: width * 0.045),
+                            ),
+                    ),
                   ),
                 ),
                 SizedBox(height: height * 0.02),

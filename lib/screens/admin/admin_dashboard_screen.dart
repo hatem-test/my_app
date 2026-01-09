@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/providers/auth_provider.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -9,6 +11,7 @@ class AdminDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final int crossAxisCount = screenWidth > 600 ? 4 : 2;
+    final user = context.watch<AuthProvider>().currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -21,9 +24,9 @@ class AdminDashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'مرحباً بك، المدير',
-              style: TextStyle(
+            Text(
+              'مرحباً بك، ${user?.name ?? 'المدير'}',
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -36,14 +39,13 @@ class AdminDashboardScreen extends StatelessWidget {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              // Adjust aspect ratio based on screen width to prevent overflow
               childAspectRatio: screenWidth > 1200
                   ? 1.5
                   : screenWidth > 800
                       ? 1.2
                       : screenWidth > 600
                           ? 1.0
-                          : 0.85, // Taller cards for mobile
+                          : 0.85,
               children: [
                 _buildStatCard(
                   context,
@@ -108,7 +110,7 @@ class AdminDashboardScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
-              backgroundColor: color.withOpacity(0.1),
+              backgroundColor: color.withValues(alpha: 0.1),
               radius: 30,
               child: Icon(icon, color: color, size: 30),
             ),
@@ -156,6 +158,9 @@ class AdminDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -167,25 +172,25 @@ class AdminDrawer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
-              children: const [
-                CircleAvatar(
+              children: [
+                const CircleAvatar(
                   backgroundColor: Colors.white,
                   radius: 30,
                   child: Icon(Icons.admin_panel_settings,
                       size: 40, color: AppColors.primary),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Text(
-                  'لوحة الأدمن',
-                  style: TextStyle(
+                  user?.name ?? 'لوحة الأدمن',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  'admin@nursery.com',
-                  style: TextStyle(
+                  user?.email ?? '',
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
                   ),
@@ -238,7 +243,6 @@ class AdminDrawer extends StatelessWidget {
             leading: const Icon(Icons.settings),
             title: const Text('الإعدادات'),
             onTap: () {
-              // TODO: Navigate to settings
               Navigator.pop(context);
             },
           ),
@@ -246,9 +250,9 @@ class AdminDrawer extends StatelessWidget {
             leading: const Icon(Icons.logout, color: AppColors.error),
             title: const Text('تسجيل الخروج',
                 style: TextStyle(color: AppColors.error)),
-            onTap: () {
-              // TODO: Implement logout
+            onTap: () async {
               Navigator.pop(context);
+              await authProvider.logout();
             },
           ),
         ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/services/auth_service.dart';
+import '../providers/auth_provider.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/role_selection_screen.dart';
 import '../../screens/auth/create_account_screen.dart';
@@ -37,15 +37,15 @@ import '../../screens/admin/children/add_edit_child_screen.dart';
 import '../../screens/admin/monitoring/admin_reports_screen.dart';
 
 class AppRouter {
-  final AuthService authService;
+  final AuthProvider authProvider;
   static final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>();
 
-  AppRouter(this.authService);
+  AppRouter(this.authProvider);
 
   late final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    refreshListenable: authService,
+    refreshListenable: authProvider,
     initialLocation: '/splash',
     routes: [
       GoRoute(
@@ -289,8 +289,8 @@ class AppRouter {
       ),
     ],
     redirect: (context, state) {
-      final isLoggedIn = authService.isAuthenticated;
-      final userRole = authService.currentUser?.role;
+      final isLoggedIn = authProvider.isAuthenticated;
+      final userRole = authProvider.currentUser?.role;
       final isLoggingIn = state.uri.path == '/login';
       final isSelectingRole = state.uri.path == '/role-selection';
       final isCreatingAccount = state.uri.path == '/create-account';
