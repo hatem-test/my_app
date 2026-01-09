@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
 
 class AddChildScreen extends StatefulWidget {
@@ -13,6 +15,18 @@ class _AddChildScreenState extends State<AddChildScreen> {
   final _nameController = TextEditingController();
   DateTime? _birthDate;
   String _selectedGender = 'boy';
+  File? _image;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +44,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               GestureDetector(
-                onTap: () {
-                  // Pick Image
-                },
+                onTap: _pickImage,
                 child: Center(
                   child: Container(
                     width: width * 0.3,
@@ -41,9 +53,15 @@ class _AddChildScreenState extends State<AddChildScreen> {
                       color: AppColors.backgroundSecondary,
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.primary, width: 2),
+                      image: _image != null
+                          ? DecorationImage(
+                              image: FileImage(_image!), fit: BoxFit.cover)
+                          : null,
                     ),
-                    child: Icon(Icons.add_a_photo,
-                        size: width * 0.1, color: AppColors.textSecondary),
+                    child: _image == null
+                        ? Icon(Icons.add_a_photo,
+                            size: width * 0.1, color: AppColors.textSecondary)
+                        : null,
                   ),
                 ),
               ),

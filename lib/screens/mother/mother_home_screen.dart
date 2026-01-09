@@ -41,10 +41,10 @@ class MotherHomeScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.all(width * 0.04),
         children: [
-          _buildChildCard(
-              context, 'أحمد محمد', '4 سنوات', 'assets/boy_1.png', Colors.blue),
-          _buildChildCard(context, 'سارة محمد', '3 سنوات', 'assets/girl_1.png',
-              Colors.pink),
+          _buildChildCard(context, 'أحمد محمد', '4 سنوات',
+              'assets/images/boy.png', AppColors.boy),
+          _buildChildCard(context, 'سارة محمد', '3 سنوات',
+              'assets/images/girl.png', AppColors.girl),
           SizedBox(height: height * 0.1), // Fab space
         ],
       ),
@@ -60,63 +60,74 @@ class MotherHomeScreen extends StatelessWidget {
   }
 
   Widget _buildChildCard(BuildContext context, String name, String age,
-      String image, Color color) {
+      String imagePath, Color color) {
     final size = MediaQuery.of(context).size;
     final width = size.width;
 
     return Card(
-      margin: EdgeInsets.only(bottom: width * 0.04),
+      margin: EdgeInsets.only(bottom: width * 0.03),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: InkWell(
         onTap: () => context.push('/child/123'), // Mock ID
-        borderRadius: BorderRadius.circular(width * 0.04),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: EdgeInsets.all(width * 0.04),
+          padding: EdgeInsets.symmetric(
+              horizontal: width * 0.03, vertical: width * 0.025),
           child: Row(
             children: [
               Container(
-                width: width * 0.2,
-                height: width * 0.2,
+                width: width * 0.16,
+                height: width * 0.16,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(width * 0.03),
-                  border: Border.all(color: color.withValues(alpha: 0.3)),
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color.withOpacity(0.2), width: 2),
                 ),
-                child: Center(
-                  child: Icon(Icons.face, size: width * 0.12, color: color),
+                child: ClipOval(
+                  child: Image.asset(
+                    imagePath,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.person,
+                      size: width * 0.08,
+                      color: color,
+                    ),
+                  ),
                 ),
               ),
-              SizedBox(width: width * 0.04),
+              SizedBox(width: width * 0.035),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       name,
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontSize: width * 0.055,
-                              ),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: width * 0.045,
+                          ),
                     ),
-                    SizedBox(height: width * 0.01),
+                    SizedBox(height: 4),
                     Text(
                       age,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontSize: width * 0.04,
+                            color: AppColors.textSecondary,
+                            fontSize: width * 0.035,
                           ),
                     ),
-                    SizedBox(height: width * 0.02),
-                    Row(
-                      children: [
-                        _StatusChip(label: 'ممتاز', color: AppColors.success),
-                        SizedBox(width: width * 0.02),
-                        _StatusChip(label: 'حضور', color: AppColors.primary),
-                      ],
-                    )
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios,
-                  color: AppColors.textDisabled, size: width * 0.04),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _StatusChip(label: 'حضور', color: AppColors.success),
+                  SizedBox(height: 4),
+                  Icon(Icons.arrow_forward_ios_rounded,
+                      color: AppColors.textDisabled, size: width * 0.04),
+                ],
+              ),
             ],
           ),
         ),

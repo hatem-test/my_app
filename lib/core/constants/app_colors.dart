@@ -5,6 +5,8 @@ class AppColors {
   static const Color primary = Color(0xFF4FC3F7); // Sky Blue
   static const Color secondary = Color(0xFF81C784); // Light Green
   static const Color accent = Color(0xFFFFB74D); // Soft Orange
+  static const Color boy = primary;
+  static const Color girl = Color(0xFFF48FB1); // Pink
 
   // Backgrounds
   static const Color backgroundPrimary = Color(0xFFFAFAFA); // Soft off-white

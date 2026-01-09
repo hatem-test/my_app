@@ -34,6 +34,8 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           if (role == 'teacher') {
             context.go('/teacher');
+          } else if (role == 'admin') {
+            context.go('/admin');
           } else {
             context.go('/');
           }

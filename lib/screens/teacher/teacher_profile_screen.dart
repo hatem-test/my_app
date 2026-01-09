@@ -34,25 +34,25 @@ class TeacherProfileScreen extends StatelessWidget {
               icon: Icons.person_outline_rounded,
               title: 'تعديل المعلومات الشخصية',
               isSmallScreen: isSmallScreen,
-              onTap: () {},
+              onTap: () => context.push('/teacher/profile/edit'),
             ),
             _buildOptionCard(
               icon: Icons.lock_outline_rounded,
               title: 'تغيير كلمة المرور',
               isSmallScreen: isSmallScreen,
-              onTap: () {},
+              onTap: () => context.push('/teacher/profile/change-password'),
             ),
             _buildOptionCard(
               icon: Icons.notifications_outlined,
               title: 'إعدادات الإشعارات',
               isSmallScreen: isSmallScreen,
-              onTap: () {},
+              onTap: () => context.push('/teacher/profile/notifications'),
             ),
             _buildOptionCard(
               icon: Icons.help_outline_rounded,
               title: 'المساعدة والدعم',
               isSmallScreen: isSmallScreen,
-              onTap: () {},
+              onTap: () => context.push('/teacher/profile/help'),
             ),
             SizedBox(height: isSmallScreen ? 18 : 24),
 
@@ -66,6 +66,7 @@ class TeacherProfileScreen extends StatelessWidget {
 
   Widget _buildProfileHeader(BuildContext context, bool isSmallScreen) {
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.all(isSmallScreen ? 18 : 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -85,11 +86,11 @@ class TeacherProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
           Container(
-            width: isSmallScreen ? 80 : 100,
-            height: isSmallScreen ? 80 : 100,
+            width: isSmallScreen ? 70 : 90,
+            height: isSmallScreen ? 70 : 90,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -103,33 +104,60 @@ class TeacherProfileScreen extends StatelessWidget {
             ),
             child: Icon(
               Icons.person_rounded,
-              size: isSmallScreen ? 40 : 50,
+              size: isSmallScreen ? 36 : 45,
               color: AppColors.primary,
             ),
           ),
-          SizedBox(height: isSmallScreen ? 12 : 16),
-          Text(
-            'سارة المحمد',
-            style: TextStyle(
-              fontSize: isSmallScreen ? 18 : 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'معلمة - روضة الأمل',
-            style: TextStyle(
-              fontSize: isSmallScreen ? 12 : 14,
-              color: Colors.white.withOpacity(0.9),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'sara@email.com',
-            style: TextStyle(
-              fontSize: isSmallScreen ? 12 : 14,
-              color: Colors.white.withOpacity(0.8),
+          SizedBox(width: isSmallScreen ? 16 : 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'سارة المحمد',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 18 : 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 4 : 6),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 10 : 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'معلمة - روضة الأمل',
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 12 : 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                SizedBox(height: isSmallScreen ? 4 : 6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.email_outlined,
+                      size: isSmallScreen ? 14 : 16,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'sara@email.com',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 12 : 14,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],

@@ -84,13 +84,18 @@ class ChildProfileScreen extends StatelessWidget {
 
   Widget _buildChildInfoCard(
       BuildContext context, Map<String, dynamic> child, bool isSmallScreen) {
+    final isMale = child['gender'] == 'ذكر';
+    final color = isMale ? AppColors.boy : AppColors.girl;
+    final imagePath =
+        isMale ? 'assets/images/boy.png' : 'assets/images/girl.png';
+
     return Container(
       padding: EdgeInsets.all(isSmallScreen ? 18 : 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary,
-            AppColors.primary.withOpacity(0.8),
+            color,
+            color.withOpacity(0.8),
           ],
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
@@ -98,7 +103,7 @@ class ChildProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(isSmallScreen ? 20 : 24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
+            color: color.withOpacity(0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -120,10 +125,19 @@ class ChildProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(
-              Icons.child_care_rounded,
-              size: isSmallScreen ? 35 : 45,
-              color: AppColors.primary,
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: ClipOval(
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Icons.person,
+                    size: isSmallScreen ? 35 : 45,
+                    color: color,
+                  ),
+                ),
+              ),
             ),
           ),
           SizedBox(width: isSmallScreen ? 14 : 20),
@@ -143,9 +157,7 @@ class ChildProfileScreen extends StatelessWidget {
                 _buildInfoRow(Icons.cake_rounded, child['age'], isSmallScreen),
                 const SizedBox(height: 4),
                 _buildInfoRow(
-                  child['gender'] == 'ذكر'
-                      ? Icons.male_rounded
-                      : Icons.female_rounded,
+                  isMale ? Icons.male_rounded : Icons.female_rounded,
                   child['gender'],
                   isSmallScreen,
                 ),

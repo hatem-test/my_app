@@ -12,6 +12,7 @@ import '../../screens/mother/add_child_screen.dart';
 import '../../screens/navigation_shell.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/splash_screen.dart';
+import '../../screens/mother/edit_child_profile_screen.dart';
 
 // Teacher screens
 import '../../screens/teacher/teacher_main_screen.dart';
@@ -21,6 +22,19 @@ import '../../screens/teacher/meals_screen.dart';
 import '../../screens/teacher/health_screen.dart';
 import '../../screens/teacher/notes_screen.dart';
 import '../../screens/teacher/contact_screen.dart';
+import '../../screens/teacher/profile/edit_profile_screen.dart';
+import '../../screens/teacher/profile/change_password_screen.dart';
+import '../../screens/teacher/profile/notification_settings_screen.dart';
+import '../../screens/teacher/profile/help_support_screen.dart';
+import '../../screens/admin/admin_navigation_shell.dart';
+import '../../screens/admin/admin_dashboard_screen.dart';
+import '../../screens/admin/children/manage_children_screen.dart';
+import '../../screens/admin/users/manage_teachers_screen.dart';
+import '../../screens/admin/users/manage_guardians_screen.dart';
+import '../../screens/admin/users/add_edit_guardian_screen.dart';
+import '../../screens/admin/users/add_edit_teacher_screen.dart';
+import '../../screens/admin/children/add_edit_child_screen.dart';
+import '../../screens/admin/monitoring/admin_reports_screen.dart';
 
 class AppRouter {
   final AuthService authService;
@@ -60,6 +74,12 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             ChildProfileScreen(childId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/edit-child/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            EditChildProfileScreen(childId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/reports',
@@ -113,6 +133,26 @@ class AppRouter {
         builder: (context, state) =>
             ContactScreen(childId: state.pathParameters['childId']),
       ),
+      GoRoute(
+        path: '/teacher/profile/edit',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/profile/change-password',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/profile/notifications',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const NotificationSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/teacher/profile/help',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const HelpSupportScreen(),
+      ),
 
       // Mother navigation shell
       StatefulShellRoute.indexedStack(
@@ -156,6 +196,97 @@ class AppRouter {
           ),
         ],
       ),
+
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return AdminNavigationShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/admin',
+                builder: (context, state) => const AdminDashboardScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'guardians',
+                    builder: (context, state) => const ManageGuardiansScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'add',
+                        builder: (context, state) =>
+                            const AddEditGuardianScreen(),
+                      ),
+                      GoRoute(
+                        path: 'edit',
+                        builder: (context, state) {
+                          final guardian = state.extra as Map<String, dynamic>;
+                          return AddEditGuardianScreen(guardian: guardian);
+                        },
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'reports',
+                    builder: (context, state) => const AdminReportsScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/admin/teachers',
+                builder: (context, state) => const ManageTeachersScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'add',
+                    builder: (context, state) => const AddEditTeacherScreen(),
+                  ),
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) {
+                      final teacher = state.extra as Map<String, dynamic>;
+                      return AddEditTeacherScreen(teacher: teacher);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/admin/children',
+                builder: (context, state) => const ManageChildrenScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'add',
+                    builder: (context, state) => const AddEditChildScreen(),
+                  ),
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) {
+                      final child = state.extra as Map<String, dynamic>;
+                      return AddEditChildScreen(child: child);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/admin/profile',
+                builder: (context, state) =>
+                    const ProfileScreen(), // Reusing generic profile for now
+              ),
+            ],
+          ),
+        ],
+      ),
     ],
     redirect: (context, state) {
       final isLoggedIn = authService.isAuthenticated;
@@ -180,6 +311,8 @@ class AppRouter {
         // Redirect based on user role
         if (userRole?.name == 'teacher') {
           return '/teacher';
+        } else if (userRole?.name == 'admin') {
+          return '/admin';
         }
         return '/';
       }

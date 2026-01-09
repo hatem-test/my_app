@@ -8,13 +8,22 @@ class ChildProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Mock child data
+    final child = {
+      'name': 'أحمد محمد',
+      'age': '4 سنوات',
+      'gender': 'ذكر',
+      'class': 'الصف الأول',
+    };
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('الملف الشخصي للطفل'),
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed: () {},
+            onPressed: () => context.push('/edit-child/$childId'),
           ),
         ],
       ),
@@ -22,25 +31,119 @@ class ChildProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const CircleAvatar(
-              radius: 50,
-              backgroundColor: AppColors.backgroundSecondary,
-              child: Icon(Icons.person, size: 60, color: AppColors.primary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'أحمد محمد',
-              style: Theme.of(context).textTheme.displaySmall,
-            ),
-            Text(
-              'العمر: 4 سنوات',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+            _buildChildInfoCard(context, child),
             const SizedBox(height: 32),
             _ActionGrid(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildChildInfoCard(BuildContext context, Map<String, dynamic> child) {
+    final isMale = child['gender'] == 'ذكر';
+    final color = isMale ? AppColors.boy : AppColors.girl;
+    final imagePath =
+        isMale ? 'assets/images/boy.png' : 'assets/images/girl.png';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color,
+            color.withOpacity(0.8),
+          ],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: ClipOval(
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Icons.person,
+                    size: 35,
+                    color: color,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  child['name'],
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildInfoRow(Icons.cake_rounded, child['age']),
+                const SizedBox(height: 4),
+                _buildInfoRow(
+                  isMale ? Icons.male_rounded : Icons.female_rounded,
+                  child['gender'],
+                ),
+                const SizedBox(height: 4),
+                _buildInfoRow(Icons.class_rounded, child['class']),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: Colors.white.withOpacity(0.9),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withOpacity(0.9),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -74,8 +177,8 @@ class _ActionGrid extends StatelessWidget {
           onTap: () {},
         ),
         _ActionButton(
-          icon: Icons.delete,
-          label: 'حذف الطفل',
+          icon: Icons.medical_services,
+          label: 'الحالة الصحية',
           color: Colors.red,
           onTap: () {},
         ),
