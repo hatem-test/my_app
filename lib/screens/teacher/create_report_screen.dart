@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 import '../../core/constants/app_colors.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/providers/teacher_provider.dart';
+import '../../models/report_model.dart';
+import '../../repositories/report_repository.dart';
 
 class CreateReportScreen extends StatefulWidget {
   final String? childId;
@@ -19,6 +25,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   String _behavior = '';
   String _sleep = '';
   String _eating = '';
+  String _additionalNotes = '';
 
   bool _isLoading = false;
 
@@ -107,7 +114,9 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                 _buildTextAreaField(
                   label: 'ملاحظات إضافية',
                   icon: Icons.notes_rounded,
-                  onChanged: (value) {},
+                  onChanged: (value) {
+                    _additionalNotes = value;
+                  },
                   isSmallScreen: isSmallScreen,
                 ),
                 SizedBox(height: isSmallScreen ? 24 : 32),
@@ -349,55 +358,102 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   }
 
   void _submitReport() {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    if (!_formKey.currentState!.validate()) return;
 
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() => _isLoading = false);
+    // يجب أن يكون هناك طفل محدد لكتابة التقرير له
+    final childId = widget.childId;
+    if (childId == null || childId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى اختيار طفل أولاً قبل كتابة التقرير'),
+        ),
+      );
+      return;
+    }
 
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check_circle_rounded,
-                      color: AppColors.success, size: 48),
+    // جلب بيانات المعلمة الحالية
+    final teacherProvider = context.read<TeacherProvider>();
+    final teacher = teacherProvider.profile;
+
+    if (teacher == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('تعذّر جلب بيانات المعلمة، يرجى إعادة فتح التطبيق والمحاولة'),
+        ),
+      );
+      return;
+    }
+
+    final repo = context.read<ReportRepository>();
+
+    setState(() => _isLoading = true);
+
+    final report = ReportModel(
+      id: '', // سيتم توليده من Supabase، ولا يُستخدم في toInsertJson
+      childId: childId,
+      teacherId: teacher.id,
+      healthStatus: _healthStatus,
+      activity: _activity,
+      behavior: _behavior,
+      sleep: _sleep,
+      eating: _eating,
+      additionalNotes: _additionalNotes.isEmpty ? null : _additionalNotes,
+      reportDate: DateTime.now(),
+    );
+
+    repo.createReport(report).then((_) {
+      setState(() => _isLoading = false);
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.15),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 20),
-                const Text('تم إرسال التقرير بنجاح!',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center),
-                const SizedBox(height: 8),
-                const Text('سيتم إشعار ولي الأمر بالتقرير الجديد',
-                    style:
-                        TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                    textAlign: TextAlign.center),
-              ],
-            ),
-            actions: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    context.pop();
-                  },
-                  child: const Text('حسناً'),
-                ),
+                child: const Icon(Icons.check_circle_rounded,
+                    color: AppColors.success, size: 48),
               ),
+              const SizedBox(height: 20),
+              const Text('تم إرسال التقرير بنجاح!',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 8),
+              const Text('سيتم إشعار ولي الأمر بالتقرير الجديد',
+                  style:
+                      TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  textAlign: TextAlign.center),
             ],
           ),
-        );
-      });
-    }
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.pop();
+                },
+                child: const Text('حسناً'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }).catchError((error) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('حدث خطأ أثناء حفظ التقرير: $error'),
+        ),
+      );
+    });
   }
 }

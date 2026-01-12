@@ -26,8 +26,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         if (success) {
-          // GoRouter redirect will handle navigation based on role
-          context.go('/');
+          // التوجيه حسب الدور
+          final user = authProvider.currentUser;
+          if (user != null) {
+            switch (user.role) {
+              case UserRole.teacher:
+                context.go('/teacher');
+                break;
+              case UserRole.admin:
+                context.go('/admin');
+                break;
+              case UserRole.mother:
+              default:
+                context.go('/');
+                break;
+            }
+          } else {
+            context.go('/');
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

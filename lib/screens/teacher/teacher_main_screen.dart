@@ -17,29 +17,25 @@ class TeacherMainScreen extends StatefulWidget {
 
 class _TeacherMainScreenState extends State<TeacherMainScreen> {
   @override
-  void initState() {
-    super.initState();
-    _initProfile();
-  }
-
-  void _initProfile() {
-    // نستخدم الـ microtask لضمان تحميل البيانات بعد أول بناء للشاشة
-    Future.microtask(() {
-      if (!mounted) return;
-      final authProvider = context.read<AuthProvider>();
-      final teacherProvider = context.read<TeacherProvider>();
-      final userId = authProvider.currentUser?.id;
-
-      if (userId != null) {
-        teacherProvider.loadProfile(userId);
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Consumer<TeacherProvider>(
       builder: (context, teacherProvider, _) {
+        // ضمان تحميل ملف المعلمة بمجرد توفر المستخدم في AuthProvider
+        final authProvider = context.watch<AuthProvider>();
+        final userId = authProvider.currentUser?.id;
+
+        if (userId != null &&
+            !teacherProvider.isLoading &&
+            (teacherProvider.profile == null ||
+                teacherProvider.profile!.userId != userId)) {
+          // استدعاء التحميل في microtask لتجنب استدعائه مباشرة داخل build
+          Future.microtask(() {
+            if (mounted) {
+              context.read<TeacherProvider>().loadProfile(userId);
+            }
+          });
+        }
+
         if (teacherProvider.isLoading) {
           return const Scaffold(
             body: Center(
@@ -74,7 +70,12 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () => _initProfile(),
+                      onPressed: () {
+                        final userId = context.read<AuthProvider>().currentUser?.id;
+                        if (userId != null) {
+                          context.read<TeacherProvider>().loadProfile(userId);
+                        }
+                      },
                       child: const Text('إعادة المحاولة'),
                     ),
                     TextButton(

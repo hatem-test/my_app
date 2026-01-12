@@ -63,21 +63,47 @@ class AuthRepository {
   /// جلب بيانات الملف الشخصي من جدول users مع نسخة احتياطية من بيانات التعريف
   Future<UserModel?> getUserProfile(String userId) async {
     UserModel? user;
+    Map<String, dynamic>? data;
+
     try {
       // محاولة جلب البيانات من الجدول
       final response =
           await _client.from('users').select().eq('id', userId).maybeSingle();
       if (response != null) {
-        user = UserModel.fromJson(response);
+        data = Map<String, dynamic>.from(response as Map);
       }
     } catch (e) {
       debugPrint('Error fetching user profile from table: $e');
     }
 
-    // التحقق من المستخدم الحالي لضبط حالة التحقق من البريد
+    // قراءة الدور من Metadata في Auth إذا لم يكن موجوداً في الجدول
     final authUser = _client.auth.currentUser;
     if (authUser != null && authUser.id == userId) {
-      if (user != null) {
+      final metadata = authUser.userMetadata ?? {};
+      final metaRole = metadata['role'] as String?;
+
+      // إذا لم يكن هناك سجل في الجدول أو حقل الدور مفقود، نستخدم دور الـ metadata
+      if (data == null) {
+        data = {
+          'id': authUser.id,
+          'email': authUser.email ?? '',
+          'name': metadata['name'] ?? 'مستخدم',
+          'phone': authUser.phone,
+          'role': metaRole ?? 'mother',
+          'profile_image_url': null,
+          'created_at': authUser.createdAt?.toIso8601String(),
+          'updated_at': null,
+        };
+      } else {
+        data['role'] ??= metaRole ?? 'mother';
+      }
+    }
+
+    if (data != null) {
+      user = UserModel.fromJson(data);
+
+      // ضبط حالة التحقق من البريد بناءً على Auth
+      if (authUser != null && authUser.id == userId) {
         user = user.copyWith(isVerified: authUser.emailConfirmedAt != null);
       }
     }
