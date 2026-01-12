@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/data_providers.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -13,84 +14,97 @@ class AdminDashboardScreen extends StatelessWidget {
     final int crossAxisCount = screenWidth > 600 ? 4 : 2;
     final user = context.watch<AuthProvider>().currentUser;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('لوحة تحكم الأدمن'),
-        centerTitle: true,
-      ),
-      drawer: const AdminDrawer(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'مرحباً بك، ${user?.name ?? 'المدير'}',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+    return MultiProvider(
+      providers: [
+        DataProviders.totalChildrenCountProvider(),
+        DataProviders.totalTeachersCountProvider(),
+        DataProviders.totalGuardiansCountProvider(),
+      ],
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('لوحة تحكم الأدمن'),
+          centerTitle: true,
+        ),
+        drawer: const AdminDrawer(),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'مرحباً بك، ${user?.name ?? 'المدير'}',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: screenWidth > 1200
-                  ? 1.5
-                  : screenWidth > 800
-                      ? 1.2
-                      : screenWidth > 600
-                          ? 1.0
-                          : 0.85,
-              children: [
-                _buildStatCard(
-                  context,
-                  title: 'عدد الأطفال',
-                  value: '45',
-                  icon: Icons.child_care,
-                  color: AppColors.primary,
-                ),
-                _buildStatCard(
-                  context,
-                  title: 'عدد المعلمات',
-                  value: '8',
-                  icon: Icons.person_outline,
-                  color: AppColors.secondary,
-                ),
-                _buildStatCard(
-                  context,
-                  title: 'عدد أولياء الأمور',
-                  value: '40',
-                  icon: Icons.face_3,
-                  color: AppColors.accent,
-                ),
-                _buildStatCard(
-                  context,
-                  title: 'التقارير اليوم',
-                  value: '12',
-                  icon: Icons.article_outlined,
-                  color: AppColors.error,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'آخر النشاطات',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+              const SizedBox(height: 20),
+              Consumer3<int, int, int>(
+                builder:
+                    (context, childrenCount, teachersCount, guardiansCount, _) {
+                  return GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: screenWidth > 1200
+                        ? 1.5
+                        : screenWidth > 800
+                            ? 1.2
+                            : screenWidth > 600
+                                ? 1.0
+                                : 0.85,
+                    children: [
+                      _buildStatCard(
+                        context,
+                        title: 'عدد الأطفال',
+                        value: childrenCount.toString(),
+                        icon: Icons.child_care,
+                        color: AppColors.primary,
+                      ),
+                      _buildStatCard(
+                        context,
+                        title: 'عدد المعلمات',
+                        value: teachersCount.toString(),
+                        icon: Icons.person_outline,
+                        color: AppColors.secondary,
+                      ),
+                      _buildStatCard(
+                        context,
+                        title: 'عدد أولياء الأمور',
+                        value: guardiansCount.toString(),
+                        icon: Icons.face_3,
+                        color: AppColors.accent,
+                      ),
+                      _buildStatCard(
+                        context,
+                        title: 'التقارير اليوم',
+                        value: '0', // يمكن إضافة موفر خاص بهذا لاحقاً
+                        icon: Icons.article_outlined,
+                        color: AppColors.error,
+                      ),
+                    ],
+                  );
+                },
               ),
-            ),
-            const SizedBox(height: 12),
-            _buildActivityItem('تم إضافة طفل جديد: أحمد محمد', 'منذ 5 دقائق'),
-            _buildActivityItem('أرسلت المعلمة سارة تقرير يومي', 'منذ 15 دقيقة'),
-            _buildActivityItem('قامت الأم ريم بتحديث بياناتها', 'منذ ساعة'),
-          ],
+              const SizedBox(height: 24),
+              const Text(
+                'آخر النشاطات',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildActivityItem('تم إضافة طفل جديد: أحمد محمد', 'منذ 5 دقائق'),
+              _buildActivityItem(
+                  'أرسلت المعلمة سارة تقرير يومي', 'منذ 15 دقيقة'),
+              _buildActivityItem('قامت الأم ريم بتحديث بياناتها', 'منذ ساعة'),
+            ],
+          ),
         ),
       ),
     );
@@ -110,7 +124,7 @@ class AdminDashboardScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
-              backgroundColor: color.withValues(alpha: 0.1),
+              backgroundColor: color.withOpacity(0.1),
               radius: 30,
               child: Icon(icon, color: color, size: 30),
             ),

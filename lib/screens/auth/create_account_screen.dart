@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../models/models.dart';
@@ -31,9 +32,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم إنشاء الحساب بنجاح')),
+            const SnackBar(
+                content: Text('تم إنشاء الحساب، يرجى التحقق من بريدك')),
           );
-          Navigator.pop(context);
+          // الانتقال لصفحة التحقق
+          context.push('/verify-email', extra: _emailController.text.trim());
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

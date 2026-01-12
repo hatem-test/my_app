@@ -40,32 +40,49 @@ class AuthRepository {
     await _client.auth.signOut();
   }
 
+  /// التحقق من كود الـ OTP المرسل للبريد
+  Future<AuthResponse> verifyOTP({
+    required String email,
+    required String token,
+  }) async {
+    return await _client.auth.verifyOTP(
+      email: email,
+      token: token,
+      type: OtpType.signup,
+    );
+  }
+
+  /// إعادة إرسال كود التحقق
+  Future<void> resendOTP(String email) async {
+    await _client.auth.resend(
+      type: OtpType.signup,
+      email: email,
+    );
+  }
+
   /// جلب بيانات الملف الشخصي من جدول users مع نسخة احتياطية من بيانات التعريف
   Future<UserModel?> getUserProfile(String userId) async {
+    UserModel? user;
     try {
       // محاولة جلب البيانات من الجدول
       final response =
-          await _client.from('users').select().eq('id', userId).single();
-      return UserModel.fromJson(response);
+          await _client.from('users').select().eq('id', userId).maybeSingle();
+      if (response != null) {
+        user = UserModel.fromJson(response);
+      }
     } catch (e) {
       debugPrint('Error fetching user profile from table: $e');
-
-      // نسخة احتياطية: محاولة استخراج البيانات من بيانات تعريف المستخدم الحالي
-      final authUser = _client.auth.currentUser;
-      if (authUser != null && authUser.id == userId) {
-        final metadata = authUser.userMetadata;
-        if (metadata != null) {
-          return UserModel(
-            id: authUser.id,
-            email: authUser.email ?? '',
-            name: metadata['name'] ?? 'مستخدم',
-            role: _parseRole(metadata['role']),
-            phone: authUser.phone,
-          );
-        }
-      }
-      return null;
     }
+
+    // التحقق من المستخدم الحالي لضبط حالة التحقق من البريد
+    final authUser = _client.auth.currentUser;
+    if (authUser != null && authUser.id == userId) {
+      if (user != null) {
+        user = user.copyWith(isVerified: authUser.emailConfirmedAt != null);
+      }
+    }
+
+    return user;
   }
 
   /// تحليل الدور من النص (نفس المنطق الموجود في UserModel)

@@ -13,6 +13,7 @@ import '../../screens/navigation_shell.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/splash_screen.dart';
 import '../../screens/mother/edit_child_profile_screen.dart';
+import '../../screens/auth/email_verification_screen.dart';
 
 // Teacher screens
 import '../../screens/teacher/teacher_main_screen.dart';
@@ -63,6 +64,13 @@ class AppRouter {
       GoRoute(
         path: '/create-account',
         builder: (context, state) => const CreateAccountScreen(),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) {
+          final email = state.extra as String? ?? '';
+          return EmailVerificationScreen(email: email);
+        },
       ),
       GoRoute(
         path: '/add-child',
@@ -290,25 +298,41 @@ class AppRouter {
     ],
     redirect: (context, state) {
       final isLoggedIn = authProvider.isAuthenticated;
+      final isEmailVerified = authProvider.currentUser?.isVerified ?? false;
       final userRole = authProvider.currentUser?.role;
       final isLoggingIn = state.uri.path == '/login';
       final isSelectingRole = state.uri.path == '/role-selection';
       final isCreatingAccount = state.uri.path == '/create-account';
+      final isVerifyingEmail = state.uri.path == '/verify-email';
       final isSplash = state.uri.path == '/splash';
 
-      if (isSplash) {
-        return null;
+      // 1. السماح للـ Splash بالبقاء
+      if (isSplash) return null;
+
+      // 2. إذا لم يكن مسجلاً، وجهه لصفحة تسجيل الدخول أو اختيار الدور
+      if (!isLoggedIn) {
+        if (isLoggingIn ||
+            isSelectingRole ||
+            isCreatingAccount ||
+            isVerifyingEmail) {
+          return null;
+        }
+        return '/login';
       }
 
-      if (!isLoggedIn &&
-          !isLoggingIn &&
-          !isSelectingRole &&
-          !isCreatingAccount) {
-        return '/role-selection';
+      // 3. إذا كان مسجلاً ولكن لم يؤكد بريده الإلكتروني
+      if (isLoggedIn && !isEmailVerified) {
+        if (isVerifyingEmail) return null;
+        return '/verify-email';
       }
 
-      if (isLoggedIn && (isLoggingIn || isSelectingRole || isCreatingAccount)) {
-        // Redirect based on user role
+      // 4. إذا كان مسجلاً ومؤكداً ويحاول الوصول لصفحات المصادقة، وجهه للرئيسية حسب دوره
+      if (isLoggedIn &&
+          isEmailVerified &&
+          (isLoggingIn ||
+              isSelectingRole ||
+              isCreatingAccount ||
+              isVerifyingEmail)) {
         if (userRole?.name == 'teacher') {
           return '/teacher';
         } else if (userRole?.name == 'admin') {

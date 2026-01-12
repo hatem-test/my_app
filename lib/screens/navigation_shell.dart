@@ -12,8 +12,6 @@ class NavigationShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: Container(
@@ -36,37 +34,41 @@ class NavigationShell extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _NavBarItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home,
-                label: 'الرئيسية',
-                isSelected: navigationShell.currentIndex == 0,
-                onTap: () => _onTap(context, 0),
-                width: width,
+              Flexible(
+                child: _NavBarItem(
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home,
+                  label: 'الرئيسية',
+                  isSelected: navigationShell.currentIndex == 0,
+                  onTap: () => _onTap(context, 0),
+                ),
               ),
-              _NavBarItem(
-                icon: Icons.notifications_outlined,
-                activeIcon: Icons.notifications,
-                label: 'الإشعارات',
-                isSelected: navigationShell.currentIndex == 1,
-                onTap: () => _onTap(context, 1),
-                width: width,
+              Flexible(
+                child: _NavBarItem(
+                  icon: Icons.notifications_outlined,
+                  activeIcon: Icons.notifications,
+                  label: 'الإشعارات',
+                  isSelected: navigationShell.currentIndex == 1,
+                  onTap: () => _onTap(context, 1),
+                ),
               ),
-              _NavBarItem(
-                icon: Icons.chat_bubble_outline,
-                activeIcon: Icons.chat_bubble,
-                label: 'الدردشة',
-                isSelected: navigationShell.currentIndex == 2,
-                onTap: () => _onTap(context, 2),
-                width: width,
+              Flexible(
+                child: _NavBarItem(
+                  icon: Icons.chat_bubble_outline,
+                  activeIcon: Icons.chat_bubble,
+                  label: 'الدردشة',
+                  isSelected: navigationShell.currentIndex == 2,
+                  onTap: () => _onTap(context, 2),
+                ),
               ),
-              _NavBarItem(
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
-                label: 'الحساب',
-                isSelected: navigationShell.currentIndex == 3,
-                onTap: () => _onTap(context, 3),
-                width: width,
+              Flexible(
+                child: _NavBarItem(
+                  icon: Icons.person_outline,
+                  activeIcon: Icons.person,
+                  label: 'الحساب',
+                  isSelected: navigationShell.currentIndex == 3,
+                  onTap: () => _onTap(context, 3),
+                ),
               ),
             ],
           ),
@@ -89,7 +91,6 @@ class _NavBarItem extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-  final double width;
 
   const _NavBarItem({
     required this.icon,
@@ -97,7 +98,6 @@ class _NavBarItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
-    required this.width,
   });
 
   @override
@@ -106,44 +106,41 @@ class _NavBarItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: width * 0.02),
+        height: 70,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedSlide(
-              offset: isSelected ? const Offset(0, -0.2) : Offset.zero,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                size: width * 0.07,
+            Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              size: 24,
+            ),
+            if (isSelected) ...[
+              const SizedBox(height: 2),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
               ),
-            ),
-            AnimatedOpacity(
-              opacity: isSelected ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: isSelected
-                  ? Text(
-                      label,
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: width * 0.03,
-                      ),
-                    )
-                  : const SizedBox(),
-            ),
-            if (isSelected)
               Container(
-                margin: const EdgeInsets.only(top: 4),
+                margin: const EdgeInsets.only(top: 2),
                 width: 4,
                 height: 4,
                 decoration: const BoxDecoration(
-                    color: AppColors.primary, shape: BoxShape.circle),
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
               )
+            ],
           ],
         ),
       ),

@@ -83,6 +83,40 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// التحقق من البريد الإلكتروني
+  Future<bool> verifyEmail(String email, String token) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _currentUser = await _authService.verifyEmail(email, token);
+      return _currentUser != null;
+    } catch (e) {
+      _errorMessage = _handleError(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// إعادة إرسال كود التحقق
+  Future<bool> resendVerificationCode(String email) async {
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authService.resendVerificationCode(email);
+      return true;
+    } catch (e) {
+      _errorMessage = _handleError(e);
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
   /// تسجيل الخروج
   Future<void> logout() async {
     await _authService.logout();
@@ -97,6 +131,8 @@ class AuthProvider extends ChangeNotifier {
       return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
     } else if (message.contains('email already in use')) {
       return 'البريد الإلكتروني مستخدم بالفعل';
+    } else if (message.contains('email not confirmed')) {
+      return 'يرجى تأكيد بريدك الإلكتروني أولاً من خلال الرابط المرسل إليك';
     } else if (message.contains('network')) {
       return 'خطأ في الاتصال بالإنترنت';
     }

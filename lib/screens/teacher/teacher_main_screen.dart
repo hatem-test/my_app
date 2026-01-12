@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/providers/teacher_provider.dart';
+import '../../core/providers/data_providers.dart';
 import 'teacher_home_screen.dart';
 import 'notifications_screen.dart';
 import 'teacher_profile_screen.dart';
@@ -12,19 +16,109 @@ class TeacherMainScreen extends StatefulWidget {
 }
 
 class _TeacherMainScreenState extends State<TeacherMainScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initProfile();
+  }
+
+  void _initProfile() {
+    // نستخدم الـ microtask لضمان تحميل البيانات بعد أول بناء للشاشة
+    Future.microtask(() {
+      if (!mounted) return;
+      final authProvider = context.read<AuthProvider>();
+      final teacherProvider = context.read<TeacherProvider>();
+      final userId = authProvider.currentUser?.id;
+
+      if (userId != null) {
+        teacherProvider.loadProfile(userId);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TeacherProvider>(
+      builder: (context, teacherProvider, _) {
+        if (teacherProvider.isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('جاري تحميل بيانات المعلمة...'),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (teacherProvider.error != null || teacherProvider.profile == null) {
+          return Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        size: 64, color: AppColors.error),
+                    const SizedBox(height: 16),
+                    Text(
+                      teacherProvider.error ??
+                          'لم يتم العثور على بيانات المعلمة',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => _initProfile(),
+                      child: const Text('إعادة المحاولة'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.read<AuthProvider>().logout(),
+                      child: const Text('تسجيل الخروج'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        // بمجرد توفر البيانات، نوفر البيانات الفرعية (مثل الإشعارات)
+        return MultiProvider(
+          providers: [
+            DataProviders.notificationsProvider(
+                teacherProvider.profile!.userId),
+          ],
+          child: const _TeacherShell(),
+        );
+      },
+    );
+  }
+}
+
+class _TeacherShell extends StatefulWidget {
+  const _TeacherShell();
+
+  @override
+  State<_TeacherShell> createState() => _TeacherShellState();
+}
+
+class _TeacherShellState extends State<_TeacherShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    TeacherHomeScreen(),
-    NotificationsScreen(),
-    TeacherProfileScreen(),
+  final List<Widget> _screens = [
+    const TeacherHomeScreen(),
+    const NotificationsScreen(),
+    const TeacherProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 360;
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -45,8 +139,8 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
           ),
           child: SafeArea(
             child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isSmallScreen ? 8 : 16,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
                 vertical: 8,
               ),
               child: Row(
@@ -57,7 +151,6 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                       icon: Icons.home_rounded,
                       label: 'الرئيسية',
                       index: 0,
-                      isSmallScreen: isSmallScreen,
                     ),
                   ),
                   Flexible(
@@ -65,7 +158,6 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                       icon: Icons.notifications_rounded,
                       label: 'الإشعارات',
                       index: 1,
-                      isSmallScreen: isSmallScreen,
                     ),
                   ),
                   Flexible(
@@ -73,7 +165,6 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                       icon: Icons.person_rounded,
                       label: 'الملف',
                       index: 2,
-                      isSmallScreen: isSmallScreen,
                     ),
                   ),
                 ],
@@ -89,51 +180,40 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
     required IconData icon,
     required String label,
     required int index,
-    required bool isSmallScreen,
   }) {
     final isSelected = _currentIndex == index;
-    final width = MediaQuery.of(context).size.width;
 
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: width * 0.02),
+        height: 70,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Animated icon slide up
-            AnimatedSlide(
-              offset: isSelected ? const Offset(0, -0.2) : Offset.zero,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: Icon(
-                icon,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                size: width * 0.07,
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              size: 24,
+            ),
+            if (isSelected) ...[
+              const SizedBox(height: 2),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
               ),
-            ),
-            // Animated label fade in/out
-            AnimatedOpacity(
-              opacity: isSelected ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: isSelected
-                  ? Text(
-                      label,
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: width * 0.03,
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            // Indicator dot
-            if (isSelected)
               Container(
-                margin: const EdgeInsets.only(top: 4),
+                margin: const EdgeInsets.only(top: 2),
                 width: 4,
                 height: 4,
                 decoration: const BoxDecoration(
@@ -141,6 +221,7 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   shape: BoxShape.circle,
                 ),
               ),
+            ],
           ],
         ),
       ),

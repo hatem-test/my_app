@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/teacher_provider.dart';
+import '../../models/models.dart';
 
 class TeacherProfileScreen extends StatelessWidget {
   const TeacherProfileScreen({super.key});
@@ -14,6 +16,11 @@ class TeacherProfileScreen extends StatelessWidget {
     final isSmallScreen = screenWidth < 360;
     final padding = screenWidth * 0.04;
     final authProvider = context.watch<AuthProvider>();
+    final teacherProvider = context.watch<TeacherProvider>();
+    final teacher = teacherProvider.profile;
+
+    if (teacher == null)
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
@@ -27,7 +34,7 @@ class TeacherProfileScreen extends StatelessWidget {
         child: Column(
           children: [
             // Profile Header Card
-            _buildProfileHeader(context, isSmallScreen, authProvider),
+            _buildProfileHeader(context, isSmallScreen, authProvider, teacher),
             SizedBox(height: isSmallScreen ? 18 : 24),
 
             // Profile Options
@@ -65,8 +72,8 @@ class TeacherProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader(
-      BuildContext context, bool isSmallScreen, AuthProvider auth) {
+  Widget _buildProfileHeader(BuildContext context, bool isSmallScreen,
+      AuthProvider auth, TeacherModel teacher) {
     final user = auth.currentUser;
     return Container(
       width: double.infinity,
@@ -75,7 +82,7 @@ class TeacherProfileScreen extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             AppColors.primary,
-            AppColors.primary.withValues(alpha: 0.8),
+            AppColors.primary.withOpacity(0.8),
           ],
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
@@ -83,7 +90,7 @@ class TeacherProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(isSmallScreen ? 20 : 24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.4),
+            color: AppColors.primary.withOpacity(0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -99,7 +106,7 @@ class TeacherProfileScreen extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: Colors.black.withOpacity(0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -117,7 +124,7 @@ class TeacherProfileScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user?.name ?? 'المعلمة',
+                  user?.name ?? teacher.name,
                   style: TextStyle(
                     fontSize: isSmallScreen ? 18 : 22,
                     fontWeight: FontWeight.bold,
@@ -131,11 +138,11 @@ class TeacherProfileScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'معلمة - روضة الأمل',
+                    teacher.specializationText,
                     style: TextStyle(
                       fontSize: isSmallScreen ? 12 : 14,
                       color: Colors.white,
@@ -148,7 +155,7 @@ class TeacherProfileScreen extends StatelessWidget {
                     Icon(
                       Icons.email_outlined,
                       size: isSmallScreen ? 14 : 16,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: Colors.white.withOpacity(0.9),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -156,7 +163,7 @@ class TeacherProfileScreen extends StatelessWidget {
                         user?.email ?? '',
                         style: TextStyle(
                           fontSize: isSmallScreen ? 12 : 14,
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity(0.9),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -199,7 +206,7 @@ class TeacherProfileScreen extends StatelessWidget {
         leading: Container(
           padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -230,7 +237,7 @@ class TeacherProfileScreen extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
+        color: AppColors.error.withOpacity(0.1),
         borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
       ),
       child: ListTile(
@@ -276,7 +283,7 @@ class TeacherProfileScreen extends StatelessWidget {
         leading: Container(
           padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
           decoration: BoxDecoration(
-            color: AppColors.error.withValues(alpha: 0.15),
+            color: AppColors.error.withOpacity(0.15),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(

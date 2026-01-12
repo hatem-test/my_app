@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/models.dart';
+import '../../repositories/children_repository.dart';
 
 class EditChildProfileScreen extends StatefulWidget {
   final String childId;
@@ -16,34 +19,93 @@ class EditChildProfileScreen extends StatefulWidget {
 class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
-  String _selectedGender = 'ذكر';
+  DateTime? _birthDate;
+  String _selectedGender = 'boy';
   String _selectedClass = 'الصف الأول';
   File? _image;
+  String? _networkImageUrl;
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  final _childrenRepo = ChildrenRepository();
 
   final List<String> _classes = ['الصف الأول', 'الصف الثاني', 'الصف الثالث'];
 
   @override
   void initState() {
     super.initState();
-    // Simulate loading data
-    _nameController.text = 'أحمد محمد';
-    _ageController.text = '4';
+    _loadChildData();
+  }
+
+  Future<void> _loadChildData() async {
+    try {
+      final child = await _childrenRepo.getChildById(widget.childId);
+      if (child != null) {
+        setState(() {
+          _nameController.text = child.name;
+          _birthDate = child.birthDate;
+          _selectedGender = child.gender.name;
+          _selectedClass = child.className ?? 'الصف الأول';
+          _networkImageUrl = child.imageUrl;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في تحميل البيانات: $e')),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _ageController.dispose();
     super.dispose();
   }
 
-  void _saveChild() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _saveChild() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_birthDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم تحديث بيانات الطفل بنجاح')),
+        const SnackBar(content: Text('الرجاء اختيار تاريخ الميلاد')),
       );
-      context.pop();
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      String? imageUrl = _networkImageUrl;
+      if (_image != null) {
+        imageUrl = await _childrenRepo.uploadImage(_image!);
+      }
+
+      await _childrenRepo.updateChild(widget.childId, {
+        'name': _nameController.text.trim(),
+        'birth_date': _birthDate!.toIso8601String().split('T').first,
+        'gender': _selectedGender,
+        'class_name': _selectedClass,
+        'image_url': imageUrl,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تحديث بيانات الطفل بنجاح')),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في التحديث: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -62,7 +124,6 @@ class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final width = size.width;
-    final isSmallScreen = width < 360;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
@@ -71,99 +132,132 @@ class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
         centerTitle: true,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(width * 0.04),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildImagePicker(width),
-              SizedBox(height: width * 0.08),
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'اسم الطفل',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'الرجاء إدخال اسم الطفل' : null,
-              ),
-              SizedBox(height: width * 0.04),
-              TextFormField(
-                controller: _ageController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'العمر',
-                  prefixIcon: const Icon(Icons.cake_outlined),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'الرجاء إدخال العمر' : null,
-              ),
-              SizedBox(height: width * 0.04),
-              _buildGenderSelector(width),
-              SizedBox(height: width * 0.04),
-              DropdownButtonFormField<String>(
-                value: _selectedClass,
-                items: _classes
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (val) => setState(() => _selectedClass = val!),
-                decoration: InputDecoration(
-                  labelText: 'الصف',
-                  prefixIcon: const Icon(Icons.class_outlined),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              SizedBox(height: width * 0.08),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _saveChild,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(width * 0.04),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _buildImagePicker(width),
+                    SizedBox(height: width * 0.08),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        labelText: 'اسم الطفل',
+                        prefixIcon: const Icon(Icons.person_outline),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      validator: (value) => value?.isEmpty ?? true
+                          ? 'الرجاء إدخال اسم الطفل'
+                          : null,
                     ),
-                  ),
-                  child: const Text(
-                    'حفظ التغييرات',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                  ),
+                    SizedBox(height: width * 0.04),
+                    _buildBirthDatePicker(width),
+                    SizedBox(height: width * 0.04),
+                    _buildGenderSelector(width),
+                    SizedBox(height: width * 0.04),
+                    DropdownButtonFormField<String>(
+                      value: _selectedClass,
+                      items: _classes
+                          .map(
+                              (c) => DropdownMenuItem(value: c, child: Text(c)))
+                          .toList(),
+                      onChanged: (val) => setState(() => _selectedClass = val!),
+                      decoration: InputDecoration(
+                        labelText: 'الصف',
+                        prefixIcon: const Icon(Icons.class_outlined),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: width * 0.08),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _isSaving ? null : _saveChild,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isSaving
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2))
+                            : const Text(
+                                'حفظ التغييرات',
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+    );
+  }
+
+  Widget _buildBirthDatePicker(double width) {
+    return GestureDetector(
+      onTap: () async {
+        final date = await showDatePicker(
+          context: context,
+          initialDate: _birthDate ?? DateTime.now(),
+          firstDate: DateTime(2010),
+          lastDate: DateTime.now(),
+        );
+        if (date != null) {
+          setState(() => _birthDate = date);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cake_outlined, color: Colors.grey),
+            const SizedBox(width: 12),
+            Text(
+              _birthDate == null
+                  ? 'تاريخ الميلاد'
+                  : DateFormat('yyyy-MM-dd').format(_birthDate!),
+              style: TextStyle(
+                color: _birthDate == null ? Colors.grey[600] : Colors.black,
+                fontSize: 16,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildImagePicker(double width) {
-    final isMale = _selectedGender == 'ذكر';
-    final color = isMale ? AppColors.boy : AppColors.girl;
-    final imagePath =
-        isMale ? 'assets/images/boy.png' : 'assets/images/girl.png';
+    final isBoy = _selectedGender == 'boy';
+    final color = isBoy ? AppColors.boy : AppColors.girl;
+    final defaultImage =
+        isBoy ? 'assets/images/boy.png' : 'assets/images/girl.png';
 
     return Center(
       child: GestureDetector(
@@ -180,14 +274,15 @@ class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
               ),
               child: ClipOval(
                 child: _image != null
-                    ? Image.file(
-                        _image!,
-                        fit: BoxFit.cover,
-                      )
-                    : Image.asset(
-                        imagePath,
-                        fit: BoxFit.cover,
-                      ),
+                    ? Image.file(_image!, fit: BoxFit.cover)
+                    : _networkImageUrl != null
+                        ? Image.network(
+                            _networkImageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Image.asset(defaultImage, fit: BoxFit.cover),
+                          )
+                        : Image.asset(defaultImage, fit: BoxFit.cover),
               ),
             ),
             Positioned(
@@ -228,8 +323,8 @@ class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
             children: [
               Expanded(
                 child: RadioListTile<String>(
-                  title: const Text('ذكر'),
-                  value: 'ذكر',
+                  title: const Text('ولد'),
+                  value: 'boy',
                   groupValue: _selectedGender,
                   activeColor: AppColors.boy,
                   onChanged: (val) => setState(() => _selectedGender = val!),
@@ -237,8 +332,8 @@ class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
               ),
               Expanded(
                 child: RadioListTile<String>(
-                  title: const Text('أنثى'),
-                  value: 'أنثى',
+                  title: const Text('بنت'),
+                  value: 'girl',
                   groupValue: _selectedGender,
                   activeColor: AppColors.girl,
                   onChanged: (val) => setState(() => _selectedGender = val!),

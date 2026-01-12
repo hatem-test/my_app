@@ -9,6 +9,16 @@ import 'core/providers/auth_provider.dart';
 import 'core/providers/app_provider.dart';
 import 'core/router/app_router.dart';
 import 'services/supabase_config.dart';
+import 'repositories/children_repository.dart';
+import 'repositories/attendance_repository.dart';
+import 'repositories/health_record_repository.dart';
+import 'repositories/meal_repository.dart';
+import 'repositories/note_repository.dart';
+import 'repositories/notification_repository.dart';
+import 'repositories/report_repository.dart';
+import 'repositories/teacher_repository.dart';
+import 'repositories/guardian_repository.dart';
+import 'core/providers/teacher_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,11 +37,26 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider(create: (_) => AuthRepository()),
-        ProxyProvider<AuthRepository, AuthService>(
-          update: (_, repo, __) => AuthService(repo),
+        Provider(create: (_) => ChildrenRepository()),
+        Provider(create: (_) => AttendanceRepository()),
+        Provider(create: (_) => HealthRecordRepository()),
+        Provider(create: (_) => MealRepository()),
+        Provider(create: (_) => NoteRepository()),
+        Provider(create: (_) => NotificationRepository()),
+        Provider(create: (_) => ReportRepository()),
+        Provider(create: (_) => TeacherRepository()),
+        Provider(create: (_) => GuardianRepository()),
+        ProxyProvider3<AuthRepository, GuardianRepository, TeacherRepository,
+            AuthService>(
+          update: (_, authRepo, guardianRepo, teacherRepo, __) =>
+              AuthService(authRepo, guardianRepo, teacherRepo),
         ),
         ChangeNotifierProvider(
           create: (context) => AuthProvider(context.read<AuthService>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              TeacherProvider(context.read<TeacherRepository>()),
         ),
         ChangeNotifierProvider(create: (_) => AppProvider()),
       ],

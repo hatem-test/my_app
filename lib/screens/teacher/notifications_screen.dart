@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/models.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -11,30 +13,7 @@ class NotificationsScreen extends StatelessWidget {
     final isSmallScreen = screenWidth < 360;
     final padding = screenWidth * 0.04;
 
-    // Mock notifications data
-    final List<Map<String, dynamic>> notifications = [
-      {
-        'title': 'تقرير جديد',
-        'message': 'تم إرسال تقرير يومي جديد لولي أمر أحمد',
-        'time': 'منذ 5 دقائق',
-        'isRead': false,
-        'icon': Icons.description_rounded,
-      },
-      {
-        'title': 'رسالة من الإدارة',
-        'message': 'اجتماع المعلمين غداً الساعة 10 صباحاً',
-        'time': 'منذ ساعة',
-        'isRead': false,
-        'icon': Icons.message_rounded,
-      },
-      {
-        'title': 'تحديث النظام',
-        'message': 'تم تحديث النظام بنجاح',
-        'time': 'منذ يوم',
-        'isRead': true,
-        'icon': Icons.system_update_rounded,
-      },
-    ];
+    final notifications = context.watch<List<NotificationModel>>();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
@@ -57,9 +36,10 @@ class NotificationsScreen extends StatelessWidget {
       ),
       body: notifications.isEmpty
           ? _buildEmptyState(isSmallScreen)
-          : ListView.builder(
+          : ListView.separated(
               padding: EdgeInsets.all(padding),
               itemCount: notifications.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 return _buildNotificationCard(
                     notifications[index], isSmallScreen);
@@ -108,20 +88,35 @@ class NotificationsScreen extends StatelessWidget {
   }
 
   Widget _buildNotificationCard(
-      Map<String, dynamic> notification, bool isSmallScreen) {
+      NotificationModel notification, bool isSmallScreen) {
+    IconData icon;
+    switch (notification.notificationType) {
+      case NotificationType.report:
+        icon = Icons.description_rounded;
+        break;
+      case NotificationType.message:
+        icon = Icons.message_rounded;
+        break;
+      case NotificationType.attendance:
+        icon = Icons.event_available_rounded;
+        break;
+      case NotificationType.system:
+        icon = Icons.system_update_rounded;
+        break;
+    }
+
     return Container(
-      margin: EdgeInsets.only(bottom: isSmallScreen ? 10 : 12),
       decoration: BoxDecoration(
-        color: notification['isRead']
+        color: notification.isRead
             ? Colors.white
             : AppColors.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
-        border: notification['isRead']
+        border: notification.isRead
             ? null
             : Border.all(color: AppColors.primary.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
+            color: AppColors.shadow.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -135,14 +130,14 @@ class NotificationsScreen extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
               decoration: BoxDecoration(
-                color: notification['isRead']
+                color: notification.isRead
                     ? AppColors.backgroundSecondary
                     : AppColors.primary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                notification['icon'],
-                color: notification['isRead']
+                icon,
+                color: notification.isRead
                     ? AppColors.textSecondary
                     : AppColors.primary,
                 size: isSmallScreen ? 20 : 24,
@@ -154,9 +149,9 @@ class NotificationsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    notification['title'],
+                    notification.title,
                     style: TextStyle(
-                      fontWeight: notification['isRead']
+                      fontWeight: notification.isRead
                           ? FontWeight.normal
                           : FontWeight.bold,
                       fontSize: isSmallScreen ? 14 : 16,
@@ -165,7 +160,7 @@ class NotificationsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    notification['message'],
+                    notification.message,
                     style: TextStyle(
                       fontSize: isSmallScreen ? 12 : 14,
                       color: AppColors.textSecondary,
@@ -173,7 +168,7 @@ class NotificationsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    notification['time'],
+                    notification.timestampText,
                     style: TextStyle(
                       fontSize: isSmallScreen ? 10 : 12,
                       color: AppColors.textDisabled,
@@ -182,7 +177,7 @@ class NotificationsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            if (!notification['isRead'])
+            if (!notification.isRead)
               Container(
                 width: isSmallScreen ? 8 : 10,
                 height: isSmallScreen ? 8 : 10,

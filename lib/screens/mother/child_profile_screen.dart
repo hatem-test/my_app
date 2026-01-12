@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/models.dart';
+import '../../repositories/children_repository.dart';
+import 'package:provider/provider.dart';
 
 class ChildProfileScreen extends StatelessWidget {
   final String childId;
@@ -8,43 +11,57 @@ class ChildProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mock child data
-    final child = {
-      'name': 'أحمد محمد',
-      'age': '4 سنوات',
-      'gender': 'ذكر',
-      'class': 'الصف الأول',
-    };
+    final childrenRepo = context.read<ChildrenRepository>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('الملف الشخصي للطفل'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => context.push('/edit-child/$childId'),
+    return StreamBuilder<ChildModel?>(
+      stream: childrenRepo.watchChild(childId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final child = snapshot.data;
+        if (child == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('الملف الشخصي')),
+            body: const Center(child: Text('لم يتم العثور على بيانات الطفل')),
+          );
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('الملف الشخصي للطفل'),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => context.push('/edit-child/$childId'),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildChildInfoCard(context, child),
-            const SizedBox(height: 32),
-            _ActionGrid(),
-          ],
-        ),
-      ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildChildInfoCard(context, child),
+                const SizedBox(height: 32),
+                _ActionGrid(),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildChildInfoCard(BuildContext context, Map<String, dynamic> child) {
-    final isMale = child['gender'] == 'ذكر';
-    final color = isMale ? AppColors.boy : AppColors.girl;
-    final imagePath =
-        isMale ? 'assets/images/boy.png' : 'assets/images/girl.png';
+  Widget _buildChildInfoCard(BuildContext context, ChildModel child) {
+    final isBoy = child.gender == Gender.boy;
+    final color = isBoy ? AppColors.boy : AppColors.girl;
+    final defaultImage =
+        isBoy ? 'assets/images/boy.png' : 'assets/images/girl.png';
+    final imagePath = child.imageUrl;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -85,15 +102,29 @@ class ChildProfileScreen extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(4.0),
               child: ClipOval(
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(
-                    Icons.person,
-                    size: 35,
-                    color: color,
-                  ),
-                ),
+                child: imagePath != null
+                    ? Image.network(
+                        imagePath,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              strokeWidth: 2,
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset(defaultImage, fit: BoxFit.cover),
+                      )
+                    : Image.asset(
+                        defaultImage,
+                        fit: BoxFit.cover,
+                      ),
               ),
             ),
           ),
@@ -103,7 +134,7 @@ class ChildProfileScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  child['name'],
+                  child.name,
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -111,14 +142,14 @@ class ChildProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _buildInfoRow(Icons.cake_rounded, child['age']),
+                _buildInfoRow(Icons.cake_rounded, child.ageText),
                 const SizedBox(height: 4),
                 _buildInfoRow(
-                  isMale ? Icons.male_rounded : Icons.female_rounded,
-                  child['gender'],
+                  isBoy ? Icons.male_rounded : Icons.female_rounded,
+                  isBoy ? 'ولد' : 'بنت',
                 ),
                 const SizedBox(height: 4),
-                _buildInfoRow(Icons.class_rounded, child['class']),
+                _buildInfoRow(Icons.class_rounded, child.className ?? '-'),
               ],
             ),
           ),

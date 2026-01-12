@@ -2,6 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/models.dart';
+import '../../repositories/auth_repository.dart';
+import '../../repositories/children_repository.dart';
+import '../../repositories/guardian_repository.dart';
 
 class AddChildScreen extends StatefulWidget {
   const AddChildScreen({super.key});
@@ -16,6 +20,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
   DateTime? _birthDate;
   String _selectedGender = 'boy';
   File? _image;
+  bool _isLoading = false;
+
+  final _authRepo = AuthRepository();
+  final _childrenRepo = ChildrenRepository();
+  final _guardianRepo = GuardianRepository();
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -25,6 +34,68 @@ class _AddChildScreenState extends State<AddChildScreen> {
       setState(() {
         _image = File(pickedFile.path);
       });
+    }
+  }
+
+  Future<void> _saveChild() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_birthDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الرجاء اختيار تاريخ الميلاد')),
+      );
+      return;
+    }
+
+    final user = _authRepo.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يجب تسجيل الدخول أولاً')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // جلب معرف ولي الأمر
+      final guardian = await _guardianRepo.getGuardianByUserId(user.id);
+      if (guardian == null) {
+        throw 'لم يتم العثور على سجل ولي الأمر الخاص بك';
+      }
+
+      String? imageUrl;
+      if (_image != null) {
+        imageUrl = await _childrenRepo.uploadImage(_image!);
+      }
+
+      final child = ChildModel(
+        id: '', // سيتم توليده بواسطة Supabase
+        guardianId: guardian.id,
+        name: _nameController.text.trim(),
+        birthDate: _birthDate!,
+        gender: _selectedGender == 'boy' ? Gender.boy : Gender.girl,
+        imageUrl: imageUrl,
+      );
+
+      await _childrenRepo.createChild(child);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تمت إضافة الطفل بنجاح')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في حفظ البيانات: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -199,19 +270,18 @@ class _AddChildScreenState extends State<AddChildScreen> {
               ),
               SizedBox(height: height * 0.06),
               ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate() && _birthDate != null) {
-                    // Save and pop
-                    Navigator.of(context).pop();
-                  } else if (_birthDate == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('الرجاء اختيار تاريخ الميلاد')),
-                    );
-                  }
-                },
-                child: Text('حفظ البيانات',
-                    style: TextStyle(fontSize: width * 0.045)),
+                onPressed: _isLoading ? null : _saveChild,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text('حفظ البيانات',
+                        style: TextStyle(fontSize: width * 0.045)),
               ),
             ],
           ),

@@ -14,6 +14,7 @@ class UserModel {
   final String? phone;
   final UserRole role;
   final String? profileImageUrl;
+  final bool isVerified;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -24,6 +25,7 @@ class UserModel {
     this.phone,
     required this.role,
     this.profileImageUrl,
+    this.isVerified = false,
     this.createdAt,
     this.updatedAt,
   });
@@ -79,6 +81,7 @@ class UserModel {
     String? phone,
     UserRole? role,
     String? profileImageUrl,
+    bool? isVerified,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -89,6 +92,7 @@ class UserModel {
       phone: phone ?? this.phone,
       role: role ?? this.role,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      isVerified: isVerified ?? this.isVerified,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

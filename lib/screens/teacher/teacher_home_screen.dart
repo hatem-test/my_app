@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/providers/data_providers.dart';
+import '../../core/providers/teacher_provider.dart';
+import '../../models/models.dart';
 
 class TeacherHomeScreen extends StatefulWidget {
   const TeacherHomeScreen({super.key});
@@ -12,26 +16,6 @@ class TeacherHomeScreen extends StatefulWidget {
 class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
 
-  // Mock data for children with gender
-  final List<Map<String, dynamic>> _children = [
-    {'id': '1', 'name': 'أحمد محمد', 'gender': 'boy'},
-    {'id': '2', 'name': 'فاطمة علي', 'gender': 'girl'},
-    {'id': '3', 'name': 'يوسف خالد', 'gender': 'boy'},
-    {'id': '4', 'name': 'مريم سعيد', 'gender': 'girl'},
-    {'id': '5', 'name': 'عمر حسن', 'gender': 'boy'},
-    {'id': '6', 'name': 'نور أحمد', 'gender': 'girl'},
-  ];
-
-  List<Map<String, dynamic>> get _filteredChildren {
-    if (_searchController.text.isEmpty) return _children;
-    return _children
-        .where((child) => child['name']
-            .toString()
-            .toLowerCase()
-            .contains(_searchController.text.toLowerCase()))
-        .toList();
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -40,14 +24,69 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // نستخدم ملف المعلمة من الـ TeacherProvider العالمي
+    final teacherProvider = context.watch<TeacherProvider>();
+    final teacher = teacherProvider.profile;
+
+    if (teacher == null) return const SizedBox.shrink();
+
+    final teacherId = teacher.id;
+
+    return MultiProvider(
+      providers: [
+        DataProviders.childrenProvider(teacherId),
+      ],
+      child: _TeacherHomeView(
+        searchController: _searchController,
+        teacherId: teacherId,
+      ),
+    );
+  }
+}
+
+class _TeacherHomeView extends StatelessWidget {
+  final TextEditingController searchController;
+  final String teacherId;
+
+  const _TeacherHomeView({
+    required this.searchController,
+    required this.teacherId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final childrenAsync = context.watch<List<ChildModel>?>();
     final size = MediaQuery.of(context).size;
     final screenWidth = size.width;
     final screenHeight = size.height;
     final isSmallScreen = screenWidth < 360;
 
-    // Responsive values
     final padding = screenWidth * 0.04;
     final cardPadding = isSmallScreen ? 14.0 : 20.0;
+
+    // Show loading state while children are being fetched
+    if (childrenAsync == null) {
+      return Scaffold(
+        backgroundColor: AppColors.backgroundPrimary,
+        appBar: AppBar(
+          title: const Text('الرئيسية'),
+          centerTitle: true,
+          elevation: 0,
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final children = childrenAsync;
+
+    // Filter children based on search
+    final filteredChildren = children
+        .where((child) => child.name
+            .toLowerCase()
+            .contains(searchController.text.toLowerCase()))
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
@@ -57,87 +96,130 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
         elevation: 0,
       ),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // Search Section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(padding),
-                child: _buildSearchField(isSmallScreen),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            (context as Element).markNeedsBuild();
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(padding),
+                  child: _buildSearchField(context, isSmallScreen),
+                ),
               ),
-            ),
-
-            // Quick Action Card
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: padding),
-                child:
-                    _buildQuickActionCard(context, cardPadding, isSmallScreen),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: padding),
+                  child: _buildQuickActionCard(
+                      context, cardPadding, isSmallScreen),
+                ),
               ),
-            ),
-
-            // Section Title
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(padding),
-                child: Text(
-                  'قائمة الأطفال',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontSize: isSmallScreen ? 18 : 20,
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(padding),
+                  child: Text(
+                    'قائمة الأطفال',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontSize: isSmallScreen ? 18 : 20,
+                        ),
+                  ),
+                ),
+              ),
+              if (filteredChildren.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.person_search_outlined,
+                            size: 64,
+                            color: AppColors.textSecondary.withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            searchController.text.isEmpty
+                                ? 'لا يوجد أطفال مسجلين تحت إشرافك حالياً'
+                                : 'لا يوجد نتائج للبحث عن "${searchController.text}"',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: isSmallScreen ? 14 : 16,
+                            ),
+                          ),
+                          if (searchController.text.isEmpty) ...[
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                // Trigger a rebuild and re-fetch
+                                (context as Element).markNeedsBuild();
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('تحديث القائمة'),
+                            ),
+                          ],
+                        ],
                       ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: padding),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildChildCard(
+                          context, filteredChildren[index], isSmallScreen),
+                      childCount: filteredChildren.length,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-
-            // Children List (horizontal cards)
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: padding),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) =>
-                      _buildChildCard(_filteredChildren[index], isSmallScreen),
-                  childCount: _filteredChildren.length,
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(child: SizedBox(height: screenHeight * 0.03)),
-          ],
+              SliverToBoxAdapter(child: SizedBox(height: screenHeight * 0.03)),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSearchField(bool isSmallScreen) {
+  Widget _buildSearchField(BuildContext context, bool isSmallScreen) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
+            color: AppColors.shadow.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: TextField(
-        controller: _searchController,
+        controller: searchController,
         textDirection: TextDirection.rtl,
-        onChanged: (_) => setState(() {}),
+        onChanged: (_) {
+          // Trigger rebuild to update filteredChildren
+          (context as Element).markNeedsBuild();
+        },
         decoration: InputDecoration(
           hintText: 'ابحث عن طفل...',
           hintTextDirection: TextDirection.rtl,
           prefixIcon: Icon(Icons.search,
               color: AppColors.textSecondary, size: isSmallScreen ? 20 : 24),
-          suffixIcon: _searchController.text.isNotEmpty
+          suffixIcon: searchController.text.isNotEmpty
               ? IconButton(
                   icon: Icon(Icons.clear,
                       color: AppColors.textSecondary,
                       size: isSmallScreen ? 18 : 22),
                   onPressed: () {
-                    _searchController.clear();
-                    setState(() {});
+                    searchController.clear();
+                    (context as Element).markNeedsBuild();
                   },
                 )
               : null,
@@ -206,7 +288,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                   Text(
                     'إنشاء تقرير يومي جديد',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white.withOpacity(0.9),
                           fontSize: isSmallScreen ? 12 : 14,
                         ),
                   ),
@@ -224,13 +306,13 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
     );
   }
 
-  Widget _buildChildCard(Map<String, dynamic> child, bool isSmallScreen) {
-    final bool isBoy = child['gender'] == 'boy';
-    final String imagePath =
-        isBoy ? 'assets/images/boy.png' : 'assets/images/girl.png';
+  Widget _buildChildCard(
+      BuildContext context, ChildModel child, bool isSmallScreen) {
+    final bool isBoy = child.gender == Gender.boy;
+    final String imagePath = child.imageUrl ?? child.defaultImagePath;
 
     return GestureDetector(
-      onTap: () => context.push('/teacher/child/${child['id']}'),
+      onTap: () => context.push('/teacher/child/${child.id}'),
       child: Container(
         margin: EdgeInsets.only(bottom: isSmallScreen ? 10 : 12),
         padding: EdgeInsets.symmetric(
@@ -251,16 +333,18 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
             CircleAvatar(
               radius: isSmallScreen ? 22 : 26,
               backgroundColor: isBoy
-                  ? AppColors.primary.withValues(alpha: 0.1)
+                  ? AppColors.primary.withOpacity(0.1)
                   : const Color(0xFFFCE4EC),
-              backgroundImage: AssetImage(imagePath),
+              backgroundImage: imagePath.startsWith('assets')
+                  ? AssetImage(imagePath) as ImageProvider
+                  : NetworkImage(imagePath),
             ),
             SizedBox(width: isSmallScreen ? 12 : 16),
 
             // Name in the center
             Expanded(
               child: Text(
-                child['name'],
+                child.name,
                 textAlign: TextAlign.right,
                 style: TextStyle(
                   fontSize: isSmallScreen ? 15 : 17,
