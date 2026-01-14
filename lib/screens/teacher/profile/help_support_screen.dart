@@ -26,7 +26,7 @@ class HelpSupportScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Row(
               children: [
-                Icon(Icons.help_outline_rounded,
+                const Icon(Icons.help_outline_rounded,
                     color: AppColors.primary, size: 24),
                 const SizedBox(width: 8),
                 Text(
@@ -142,7 +142,7 @@ class HelpSupportScreen extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
               ),
@@ -172,7 +172,7 @@ class HelpSupportScreen extends StatelessWidget {
         child: ExpansionTile(
           title: Text(
             question,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 15,
               color: AppColors.textPrimary,
@@ -183,7 +183,7 @@ class HelpSupportScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Text(
                 answer,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),

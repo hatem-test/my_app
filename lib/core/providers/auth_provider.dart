@@ -101,6 +101,47 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// تغيير كلمة المرور
+  Future<bool> changePassword(String newPassword) async {
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authService.changePassword(newPassword);
+      return true;
+    } catch (e) {
+      _errorMessage = _handleError(e);
+      return false;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  /// تحديث الملف الشخصي
+  Future<bool> updateProfile({
+    required String name,
+    String? phone,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authService.updateProfile(name: name, phone: phone);
+      // تحديث البيانات المحلية
+      if (_currentUser != null) {
+        _currentUser = _currentUser!.copyWith(name: name, phone: phone);
+      }
+      return true;
+    } catch (e) {
+      _errorMessage = _handleError(e);
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// إعادة إرسال كود التحقق
   Future<bool> resendVerificationCode(String email) async {
     _errorMessage = null;

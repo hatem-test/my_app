@@ -150,11 +150,11 @@ class ContactScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
               color: AppColors.shadow,
               blurRadius: 8,
-              offset: const Offset(0, 2))
+              offset: Offset(0, 2))
         ],
       ),
       child: ListTile(
@@ -199,11 +199,11 @@ class ContactScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
               color: AppColors.shadow,
               blurRadius: 12,
-              offset: const Offset(0, 4))
+              offset: Offset(0, 4))
         ],
       ),
       child: Column(

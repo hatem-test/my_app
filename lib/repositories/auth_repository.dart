@@ -91,7 +91,8 @@ class AuthRepository {
           'phone': authUser.phone,
           'role': metaRole ?? 'mother',
           'profile_image_url': null,
-          'created_at': authUser.createdAt?.toIso8601String(),
+          // created_at في Auth يكون عادة نصاً أو DateTime؛ نتركه كما هو
+          'created_at': authUser.createdAt,
           'updated_at': null,
         };
       } else {
@@ -131,5 +132,12 @@ class AuthRepository {
   Future<void> updateUserProfile(
       String userId, Map<String, dynamic> data) async {
     await _client.from('users').update(data).eq('id', userId);
+  }
+
+  /// تحديث كلمة المرور
+  Future<void> updatePassword(String newPassword) async {
+    await _client.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
   }
 }

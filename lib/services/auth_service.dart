@@ -26,9 +26,7 @@ class AuthService {
         UserModel? user = await _repository.getUserProfile(response.user!.id);
 
         // إذا كان السجل مفقوداً، نقوم بمزامنته
-        if (user == null) {
-          user = await _syncProfileIfMissing(response.user!);
-        }
+        user ??= await _syncProfileIfMissing(response.user!);
 
         return user;
       }
@@ -92,9 +90,7 @@ class AuthService {
         UserModel? user = await _repository.getUserProfile(response.user!.id);
 
         // مزامنة الملف إذا كان مفقوداً بعد التحقق
-        if (user == null) {
-          user = await _syncProfileIfMissing(response.user!);
-        }
+        user ??= await _syncProfileIfMissing(response.user!);
 
         return user;
       }
@@ -120,13 +116,35 @@ class AuthService {
       UserModel? profile = await _repository.getUserProfile(user.id);
 
       // مزامنة تلقائية إذا كان المسار مقطوعاً
-      if (profile == null) {
-        profile = await _syncProfileIfMissing(user);
-      }
+      profile ??= await _syncProfileIfMissing(user);
 
       return profile;
     }
     return null;
+  }
+
+  /// تحديث الملف الشخصي
+  Future<void> updateProfile({
+    required String name,
+    String? phone,
+  }) async {
+    final user = _repository.currentUser;
+    if (user != null) {
+      await _repository.updateUserProfile(user.id, {
+        'name': name,
+        'phone': phone,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+      // أيضا نحدث بيانات التعريف
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(data: {'name': name}),
+      );
+    }
+  }
+
+  /// تغيير كلمة المرور
+  Future<void> changePassword(String newPassword) async {
+    await _repository.updatePassword(newPassword);
   }
 
   /// مزامنة الملف المفقود من بيانات تعريف Auth

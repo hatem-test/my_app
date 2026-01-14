@@ -47,7 +47,7 @@ class ChildProfileScreen extends StatelessWidget {
               children: [
                 _buildChildInfoCard(context, child),
                 const SizedBox(height: 32),
-                _ActionGrid(),
+                _ActionGrid(childId: childId),
               ],
             ),
           ),
@@ -180,6 +180,10 @@ class ChildProfileScreen extends StatelessWidget {
 }
 
 class _ActionGrid extends StatelessWidget {
+  final String childId;
+
+  const _ActionGrid({required this.childId});
+
   @override
   Widget build(BuildContext context) {
     return GridView.count(
@@ -193,25 +197,25 @@ class _ActionGrid extends StatelessWidget {
           icon: Icons.assignment,
           label: 'التقارير',
           color: Colors.blue,
-          onTap: () => context.push('/reports'),
+          onTap: () => context.push('/child/$childId/reports'),
         ),
         _ActionButton(
           icon: Icons.note,
           label: 'الملاحظات',
           color: Colors.orange,
-          onTap: () {},
+          onTap: () => context.push('/child/$childId/notes'),
         ),
         _ActionButton(
           icon: Icons.restaurant,
           label: 'الوجبات',
           color: Colors.green,
-          onTap: () {},
+          onTap: () => context.push('/child/$childId/meals'),
         ),
         _ActionButton(
           icon: Icons.medical_services,
           label: 'الحالة الصحية',
           color: Colors.red,
-          onTap: () {},
+          onTap: () => context.push('/child/$childId/health'),
         ),
       ],
     );

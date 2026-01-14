@@ -16,8 +16,9 @@ class MotherHomeScreen extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
     final userId = authProvider.currentUser?.id;
 
-    if (userId == null)
+    if (userId == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return MultiProvider(
       providers: [
@@ -93,7 +94,7 @@ class _MotherHomeView extends StatelessWidget {
                     children: [
                       Container(
                         padding: EdgeInsets.all(width * 0.08),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.backgroundSecondary,
                           shape: BoxShape.circle,
                         ),
@@ -219,7 +220,7 @@ class _MotherHomeView extends StatelessWidget {
                             fontSize: width * 0.045,
                           ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       age,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -234,8 +235,8 @@ class _MotherHomeView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   // يمكن جلب حالة الحضور الحقيقية هنا لاحقاً
-                  _StatusChip(label: 'حضور', color: AppColors.success),
-                  SizedBox(height: 4),
+                  const _StatusChip(label: 'حضور', color: AppColors.success),
+                  const SizedBox(height: 4),
                   Icon(Icons.arrow_forward_ios_rounded,
                       color: AppColors.textDisabled, size: width * 0.04),
                 ],

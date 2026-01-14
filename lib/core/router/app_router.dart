@@ -7,9 +7,16 @@ import '../../screens/auth/role_selection_screen.dart';
 import '../../screens/auth/create_account_screen.dart';
 import '../../screens/mother/child_profile_screen.dart';
 import '../../screens/mother/reports_screen.dart';
+import '../../screens/mother/child_reports_screen.dart';
+import '../../screens/mother/child_notes_screen.dart';
+import '../../screens/mother/child_meals_screen.dart';
+import '../../screens/mother/child_health_screen.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/mother/add_child_screen.dart';
 import '../../screens/navigation_shell.dart';
+import '../../screens/mother/chat/chat_screen.dart'; // Import ChatScreen
+import '../../core/providers/chat_provider.dart'; // Import ChatProvider
+import 'package:provider/provider.dart'; // Import Provider
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/splash_screen.dart';
 import '../../screens/mother/edit_child_profile_screen.dart';
@@ -27,15 +34,19 @@ import '../../screens/teacher/profile/edit_profile_screen.dart';
 import '../../screens/teacher/profile/change_password_screen.dart';
 import '../../screens/teacher/profile/notification_settings_screen.dart';
 import '../../screens/teacher/profile/help_support_screen.dart';
-import '../../screens/admin/admin_navigation_shell.dart';
+
 import '../../screens/admin/admin_dashboard_screen.dart';
 import '../../screens/admin/children/manage_children_screen.dart';
 import '../../screens/admin/users/manage_teachers_screen.dart';
 import '../../screens/admin/users/manage_guardians_screen.dart';
 import '../../screens/admin/users/add_edit_guardian_screen.dart';
 import '../../screens/admin/users/add_edit_teacher_screen.dart';
+import '../../models/models.dart';
 import '../../screens/admin/children/add_edit_child_screen.dart';
 import '../../screens/admin/monitoring/admin_reports_screen.dart';
+import '../../screens/admin/monitoring/report_detail_screen.dart';
+import '../../screens/admin/meals/admin_meals_screen.dart';
+import '../../screens/admin/meals/admin_add_meal_screen.dart';
 
 class AppRouter {
   final AuthProvider authProvider;
@@ -82,6 +93,36 @@ class AppRouter {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             ChildProfileScreen(childId: state.pathParameters['id']!),
+        routes: [
+          GoRoute(
+            path: 'reports',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (context, state) => ChildReportsScreen(
+              childId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: 'notes',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (context, state) => ChildNotesScreen(
+              childId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: 'meals',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (context, state) => ChildMealsScreen(
+              childId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: 'health',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (context, state) => ChildHealthScreen(
+              childId: state.pathParameters['id']!,
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/edit-child/:id',
@@ -189,8 +230,10 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/chat',
-                builder: (context, state) =>
-                    const Scaffold(body: Center(child: Text('الدردشة'))),
+                builder: (context, state) => ChangeNotifierProvider(
+                  create: (_) => ChatProvider(),
+                  child: const ChatScreen(),
+                ),
               ),
             ],
           ),
@@ -205,93 +248,88 @@ class AppRouter {
         ],
       ),
 
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return AdminNavigationShell(navigationShell: navigationShell);
-        },
-        branches: [
-          StatefulShellBranch(
+      // Admin Routes (Flattened, no Shell)
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminDashboardScreen(),
+        routes: [
+          GoRoute(
+            path: 'teachers',
+            builder: (context, state) => const ManageTeachersScreen(),
             routes: [
               GoRoute(
-                path: '/admin',
-                builder: (context, state) => const AdminDashboardScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'guardians',
-                    builder: (context, state) => const ManageGuardiansScreen(),
-                    routes: [
-                      GoRoute(
-                        path: 'add',
-                        builder: (context, state) =>
-                            const AddEditGuardianScreen(),
-                      ),
-                      GoRoute(
-                        path: 'edit',
-                        builder: (context, state) {
-                          final guardian = state.extra as Map<String, dynamic>;
-                          return AddEditGuardianScreen(guardian: guardian);
-                        },
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'reports',
-                    builder: (context, state) => const AdminReportsScreen(),
-                  ),
-                ],
+                path: 'add',
+                builder: (context, state) => const AddEditTeacherScreen(),
+              ),
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) {
+                  final teacher = state.extra as TeacherModel;
+                  return AddEditTeacherScreen(teacher: teacher);
+                },
               ),
             ],
           ),
-          StatefulShellBranch(
+          GoRoute(
+            path: 'guardians',
+            builder: (context, state) => const ManageGuardiansScreen(),
             routes: [
               GoRoute(
-                path: '/admin/teachers',
-                builder: (context, state) => const ManageTeachersScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'add',
-                    builder: (context, state) => const AddEditTeacherScreen(),
-                  ),
-                  GoRoute(
-                    path: 'edit',
-                    builder: (context, state) {
-                      final teacher = state.extra as Map<String, dynamic>;
-                      return AddEditTeacherScreen(teacher: teacher);
-                    },
-                  ),
-                ],
+                path: 'add',
+                builder: (context, state) => const AddEditGuardianScreen(),
+              ),
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) {
+                  final guardian = state.extra as GuardianModel;
+                  return AddEditGuardianScreen(guardian: guardian);
+                },
               ),
             ],
           ),
-          StatefulShellBranch(
+          GoRoute(
+            path: 'children',
+            builder: (context, state) => const ManageChildrenScreen(),
             routes: [
               GoRoute(
-                path: '/admin/children',
-                builder: (context, state) => const ManageChildrenScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'add',
-                    builder: (context, state) => const AddEditChildScreen(),
-                  ),
-                  GoRoute(
-                    path: 'edit',
-                    builder: (context, state) {
-                      final child = state.extra as Map<String, dynamic>;
-                      return AddEditChildScreen(child: child);
-                    },
-                  ),
-                ],
+                path: 'add',
+                builder: (context, state) => const AddEditChildScreen(),
+              ),
+              GoRoute(
+                path: 'edit',
+                builder: (context, state) {
+                  final child = state.extra as Map<String, dynamic>;
+                  return AddEditChildScreen(child: child);
+                },
               ),
             ],
           ),
-          StatefulShellBranch(
+          GoRoute(
+            path: 'reports',
+            builder: (context, state) => const AdminReportsScreen(),
             routes: [
               GoRoute(
-                path: '/admin/profile',
-                builder: (context, state) =>
-                    const ProfileScreen(), // Reusing generic profile for now
+                path: 'detail',
+                builder: (context, state) {
+                  final reportData = state.extra as Map<String, dynamic>;
+                  return ReportDetailScreen(reportData: reportData);
+                },
               ),
             ],
+          ),
+          GoRoute(
+            path: 'meals',
+            builder: (context, state) => const AdminMealsScreen(),
+            routes: [
+              GoRoute(
+                path: 'add',
+                builder: (context, state) => const AdminAddMealScreen(),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'profile',
+            builder: (context, state) => const ProfileScreen(),
           ),
         ],
       ),

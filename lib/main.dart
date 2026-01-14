@@ -18,6 +18,7 @@ import 'repositories/notification_repository.dart';
 import 'repositories/report_repository.dart';
 import 'repositories/teacher_repository.dart';
 import 'repositories/guardian_repository.dart';
+import 'repositories/dashboard_repository.dart';
 import 'core/providers/teacher_provider.dart';
 
 Future<void> main() async {
@@ -46,6 +47,17 @@ class MyApp extends StatelessWidget {
         Provider(create: (_) => ReportRepository()),
         Provider(create: (_) => TeacherRepository()),
         Provider(create: (_) => GuardianRepository()),
+        ProxyProvider4<ChildrenRepository, TeacherRepository,
+            GuardianRepository, ReportRepository, DashboardRepository>(
+          update:
+              (_, childrenRepo, teacherRepo, guardianRepo, reportRepo, __) =>
+                  DashboardRepository(
+            childrenRepo,
+            teacherRepo,
+            guardianRepo,
+            reportRepo,
+          ),
+        ),
         ProxyProvider3<AuthRepository, GuardianRepository, TeacherRepository,
             AuthService>(
           update: (_, authRepo, guardianRepo, teacherRepo, __) =>

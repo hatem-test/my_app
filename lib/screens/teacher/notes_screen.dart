@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../models/models.dart';
+import '../../repositories/note_repository.dart';
 
 class NotesScreen extends StatefulWidget {
   final String? childId;
@@ -12,24 +16,8 @@ class NotesScreen extends StatefulWidget {
 
 class _NotesScreenState extends State<NotesScreen> {
   final TextEditingController _noteController = TextEditingController();
-
-  final List<Map<String, dynamic>> _notes = [
-    {
-      'content': 'أحمد كان نشيطاً جداً اليوم وشارك في جميع الأنشطة',
-      'timestamp': 'اليوم، 10:30 ص',
-      'sentToMother': true
-    },
-    {
-      'content': 'يحتاج إلى متابعة في القراءة',
-      'timestamp': 'أمس، 2:15 م',
-      'sentToMother': true
-    },
-    {
-      'content': 'تفاعل ممتاز مع الأطفال الآخرين',
-      'timestamp': 'منذ 3 أيام',
-      'sentToMother': false
-    },
-  ];
+  bool _isSending = false;
+  final Set<String> _readNoteIds = {};
 
   @override
   void dispose() {
@@ -39,6 +27,9 @@ class _NotesScreenState extends State<NotesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    final currentUserId = auth.currentUser?.id;
+    final noteRepo = context.read<NoteRepository>();
     final size = MediaQuery.of(context).size;
     final screenWidth = size.width;
     final isSmallScreen = screenWidth < 360;
@@ -56,16 +47,64 @@ class _NotesScreenState extends State<NotesScreen> {
         body: Column(
           children: [
             Expanded(
-              child: _notes.isEmpty
-                  ? _buildEmptyState(isSmallScreen)
-                  : ListView.builder(
-                      padding: EdgeInsets.all(padding),
-                      itemCount: _notes.length,
-                      itemBuilder: (context, index) =>
-                          _buildNoteCard(_notes[index], isSmallScreen),
+              child: widget.childId == null
+                  ? _buildErrorState(
+                      isSmallScreen, 'يجب تحديد طفل لعرض الملاحظات')
+                  : StreamBuilder<List<NoteModel>>(
+                      stream: noteRepo.watchNotes(widget.childId!),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return _buildErrorState(
+                              isSmallScreen, 'حدث خطأ أثناء جلب الملاحظات');
+                        }
+                        final notes = snapshot.data ?? [];
+                        if (notes.isEmpty) {
+                          return _buildEmptyState(isSmallScreen);
+                        }
+                        return RefreshIndicator(
+                          onRefresh: () async {},
+                          child: ListView.builder(
+                            padding: EdgeInsets.all(padding),
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: notes.length,
+                            itemBuilder: (context, index) =>
+                                _buildNoteCard(notes[index], isSmallScreen, currentUserId),
+                          ),
+                        );
+                      },
                     ),
             ),
             _buildAddNoteSection(isSmallScreen),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(bool isSmallScreen, String message) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline,
+                size: isSmallScreen ? 48 : 60, color: AppColors.error),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 15 : 17,
+                color: AppColors.textPrimary,
+              ),
+            ),
           ],
         ),
       ),
@@ -102,17 +141,24 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  Widget _buildNoteCard(Map<String, dynamic> note, bool isSmallScreen) {
+  Widget _buildNoteCard(
+      NoteModel note, bool isSmallScreen, String? currentUserId) {
+    final isFromTeacher =
+        currentUserId != null && note.authorId == currentUserId;
+    final statusLabel = isFromTeacher ? 'مرسلة' : 'من ولي الأمر';
+
+    final isRead = _readNoteIds.contains(note.id);
+    _readNoteIds.add(note.id);
     return Container(
       margin: EdgeInsets.only(bottom: isSmallScreen ? 10 : 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
               color: AppColors.shadow,
               blurRadius: 8,
-              offset: const Offset(0, 2))
+              offset: Offset(0, 2))
         ],
       ),
       child: Padding(
@@ -132,33 +178,34 @@ class _NotesScreenState extends State<NotesScreen> {
                       color: AppColors.primary, size: isSmallScreen ? 16 : 20),
                 ),
                 const Spacer(),
-                if (note['sentToMother'])
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: isSmallScreen ? 8 : 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle_rounded,
-                            size: isSmallScreen ? 12 : 14,
-                            color: AppColors.success),
-                        const SizedBox(width: 4),
-                        Text('مُرسلة',
-                            style: TextStyle(
-                                fontSize: isSmallScreen ? 10 : 12,
-                                color: AppColors.success,
-                                fontWeight: FontWeight.w500)),
-                      ],
-                    ),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 8 : 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
                   ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle_rounded,
+                          size: isSmallScreen ? 12 : 14,
+                          color: AppColors.success),
+                      const SizedBox(width: 4),
+                      Text(
+                        statusLabel,
+                        style: TextStyle(
+                            fontSize: isSmallScreen ? 10 : 12,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
             SizedBox(height: isSmallScreen ? 10 : 12),
-            Text(note['content'],
+            Text(note.content,
                 style: TextStyle(
                     fontSize: isSmallScreen ? 13 : 15,
                     color: AppColors.textPrimary,
@@ -170,10 +217,41 @@ class _NotesScreenState extends State<NotesScreen> {
                     size: isSmallScreen ? 12 : 14,
                     color: AppColors.textDisabled),
                 const SizedBox(width: 4),
-                Text(note['timestamp'],
+                Text(note.timestampText,
                     style: TextStyle(
                         fontSize: isSmallScreen ? 10 : 12,
                         color: AppColors.textDisabled)),
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.check,
+                  size: isSmallScreen ? 12 : 14,
+                  color: AppColors.textDisabled,
+                ),
+                if (isRead) ...[
+                  const SizedBox(width: 2),
+                  Icon(
+                    Icons.check,
+                    size: isSmallScreen ? 12 : 14,
+                    color: AppColors.success,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'مقروءة',
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 10 : 12,
+                      color: AppColors.success,
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    'تم الإرسال',
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 10 : 12,
+                      color: AppColors.textDisabled,
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
@@ -203,21 +281,21 @@ class _NotesScreenState extends State<NotesScreen> {
                   color: AppColors.backgroundSecondary,
                   borderRadius: BorderRadius.circular(isSmallScreen ? 20 : 24),
                 ),
-                child: TextField(
-                  controller: _noteController,
-                  textDirection: TextDirection.rtl,
-                  decoration: InputDecoration(
-                    hintText: 'اكتب ملاحظة جديدة...',
-                    hintTextDirection: TextDirection.rtl,
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: isSmallScreen ? 16 : 20,
-                      vertical: isSmallScreen ? 12 : 14,
-                    ),
+              child: TextField(
+                controller: _noteController,
+                textDirection: TextDirection.rtl,
+                decoration: InputDecoration(
+                  hintText: 'اكتب ملاحظة جديدة...',
+                  hintTextDirection: TextDirection.rtl,
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 16 : 20,
+                    vertical: isSmallScreen ? 12 : 14,
                   ),
-                  maxLines: null,
-                  style: TextStyle(fontSize: isSmallScreen ? 13 : 14),
                 ),
+                maxLines: null,
+                style: TextStyle(fontSize: isSmallScreen ? 13 : 14),
+              ),
               ),
             ),
             SizedBox(width: isSmallScreen ? 10 : 12),
@@ -236,9 +314,18 @@ class _NotesScreenState extends State<NotesScreen> {
                 ],
               ),
               child: IconButton(
-                onPressed: _addNote,
-                icon: Icon(Icons.send_rounded,
-                    color: Colors.white, size: isSmallScreen ? 20 : 24),
+                onPressed: _isSending ? null : _addNote,
+                icon: _isSending
+                    ? SizedBox(
+                        width: isSmallScreen ? 18 : 20,
+                        height: isSmallScreen ? 18 : 20,
+                        child: const CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Icon(Icons.send_rounded,
+                        color: Colors.white, size: isSmallScreen ? 20 : 24),
               ),
             ),
           ],
@@ -247,26 +334,39 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  void _addNote() {
-    if (_noteController.text.trim().isNotEmpty) {
-      setState(() {
-        _notes.insert(0, {
-          'content': _noteController.text.trim(),
-          'timestamp': 'الآن',
-          'sentToMother': false
-        });
-        _noteController.clear();
-      });
+  Future<void> _addNote() async {
+    if (_noteController.text.trim().isEmpty || widget.childId == null) return;
 
+    final auth = context.read<AuthProvider>();
+    final userId = auth.currentUser?.id;
+    if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('تمت إضافة الملاحظة بنجاح'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
+        const SnackBar(content: Text('يرجى تسجيل الدخول لإرسال ملاحظة')),
       );
+      return;
+    }
+
+    setState(() => _isSending = true);
+
+    final repo = context.read<NoteRepository>();
+    final note = NoteModel(
+      id: '',
+      childId: widget.childId!,
+      authorId: userId,
+      content: _noteController.text.trim(),
+      isSentToParent: true, // المعلمة ترسل لولي الأمر
+      createdAt: DateTime.now(),
+    );
+
+    try {
+      await repo.createNote(note);
+      _noteController.clear();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر إرسال الملاحظة: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSending = false);
     }
   }
 }

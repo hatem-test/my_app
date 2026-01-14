@@ -16,6 +16,112 @@ class ChildrenRepository {
     return (response as List).map((json) => ChildModel.fromJson(json)).toList();
   }
 
+  /// جلب جميع الأطفال مع بيانات المعلمة وولي الأمر
+  Future<List<Map<String, dynamic>>> getAllChildrenWithDetails() async {
+    try {
+      final response = await _client.from('children').select('''
+            *,
+            guardians(id, users(name)),
+            teachers(id, users(name))
+          ''');
+
+      debugPrint(
+          'DEBUG: getAllChildrenWithDetails - Response length: ${(response as List).length}');
+
+      return (response as List).map((json) {
+        try {
+          final child = ChildModel.fromJson(json);
+          final guardian = json['guardians'];
+          final teacher = json['teachers'];
+
+          String guardianName = 'غير محدد';
+          if (guardian != null) {
+            if (guardian is Map) {
+              if (guardian['users'] != null) {
+                final user = guardian['users'];
+                if (user is Map && user['name'] != null) {
+                  guardianName = user['name'] as String;
+                }
+              } else {
+                debugPrint(
+                    'DEBUG: guardian exists but users is null for child ${child.id}');
+              }
+            }
+          }
+
+          String teacherName = 'غير محدد';
+          if (teacher != null) {
+            if (teacher is Map) {
+              if (teacher['users'] != null) {
+                final user = teacher['users'];
+                if (user is Map && user['name'] != null) {
+                  teacherName = user['name'] as String;
+                }
+              } else {
+                debugPrint(
+                    'DEBUG: teacher exists but users is null for child ${child.id}');
+              }
+            }
+          }
+
+          return {
+            'child': child,
+            'guardianName': guardianName,
+            'teacherName': teacherName,
+          };
+        } catch (e) {
+          debugPrint('Error parsing child data: $e');
+          // في حالة فشل parsing، نحاول على الأقل إرجاع الطفل بدون التفاصيل
+          try {
+            final child = ChildModel.fromJson(json);
+            return {
+              'child': child,
+              'guardianName': 'غير محدد',
+              'teacherName': 'غير محدد',
+            };
+          } catch (e2) {
+            debugPrint('Error creating child model: $e2');
+            rethrow;
+          }
+        }
+      }).toList();
+    } on PostgrestException catch (e) {
+      final errorMessage = e.message ?? '';
+      final errorCode = e.code ?? '';
+      final errorDetails = e.details ?? '';
+      final errorHint = e.hint ?? '';
+
+      debugPrint(
+          'PostgrestException in getAllChildrenWithDetails: $errorCode - $errorMessage');
+      debugPrint('Details: $errorDetails');
+      debugPrint('Hint: $errorHint');
+
+      // إذا كان الخطأ متعلق بالصلاحيات، نعيد خطأ واضح
+      if (errorMessage.contains('permission denied') ||
+          errorMessage.contains('RLS') ||
+          errorCode == 'PGRST301') {
+        throw 'خطأ في الصلاحيات: يرجى التأكد من أن السياسات (RLS Policies) تم تطبيقها بشكل صحيح. راجع ملف complete_admin_rls_policies.sql';
+      }
+      rethrow;
+    } catch (e) {
+      debugPrint('Error fetching children with details: $e');
+      // في حالة فشل الـ join، نعيد البيانات بدون التفاصيل
+      try {
+        final children = await getAllChildren();
+        return children
+            .map((child) => {
+                  'child': child,
+                  'guardianName': 'غير محدد',
+                  'teacherName': 'غير محدد',
+                })
+            .toList();
+      } catch (e2) {
+        debugPrint('Error fetching children without details: $e2');
+        rethrow;
+      }
+    }
+  }
+
   /// جلب أطفال ولي أمر معين
   Future<List<ChildModel>> getChildrenByGuardian(String guardianId) async {
     final response =
@@ -88,18 +194,19 @@ class ChildrenRepository {
     try {
       final fileName =
           '${DateTime.now().millisecondsSinceEpoch}${p.extension(imageFile.path)}';
-      final path = 'profiles/$fileName';
+      final path = 'child/$fileName';
 
-      await _client.storage.from('children').upload(
+      await _client.storage.from('images').upload(
             path,
             imageFile,
             fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
           );
 
-      return _client.storage.from('children').getPublicUrl(path);
+      return _client.storage.from('images').getPublicUrl(path);
     } catch (e) {
-      debugPrint('Error uploading image: $e');
-      return null;
+      debugPrint('Error uploading image to Supabase Storage: $e');
+      // Rethrowing so the UI can catch it and show a snackbar
+      throw 'فشل رفع الصورة: $e';
     }
   }
 

@@ -20,6 +20,12 @@ CREATE POLICY "Allow guardians to read their own record" ON guardians
 FOR SELECT TO authenticated
 USING (auth.uid() = user_id);
 
+-- السماح للمدير بقراءة جميع أولياء الأمور اعتماداً على JWT claim مباشرة لتجنب الحاجة لصف في جدول users
+DROP POLICY IF EXISTS "Admins can view all guardians (jwt)" ON guardians;
+CREATE POLICY "Admins can view all guardians (jwt)" ON guardians
+FOR SELECT TO authenticated
+USING ((auth.jwt() ->> 'role') = 'admin');
+
 DROP POLICY IF EXISTS "Allow guardians to insert their own record" ON guardians;
 CREATE POLICY "Allow guardians to insert their own record" ON guardians
 FOR INSERT TO authenticated
@@ -35,6 +41,12 @@ DROP POLICY IF EXISTS "Allow teachers to read their own record" ON teachers;
 CREATE POLICY "Allow teachers to read their own record" ON teachers
 FOR SELECT TO authenticated
 USING (auth.uid() = user_id);
+
+-- السماح للمدير بقراءة جميع المعلمات اعتماداً على JWT claim مباشرة لتجنب الحاجة لصف في جدول users
+DROP POLICY IF EXISTS "Admins can view all teachers (jwt)" ON teachers;
+CREATE POLICY "Admins can view all teachers (jwt)" ON teachers
+FOR SELECT TO authenticated
+USING ((auth.jwt() ->> 'role') = 'admin');
 
 DROP POLICY IF EXISTS "Allow teachers to insert their own record" ON teachers;
 CREATE POLICY "Allow teachers to insert their own record" ON teachers
@@ -77,7 +89,9 @@ USING (
   ) OR
   EXISTS (
     SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'
-  )
+  ) OR
+  -- دعم الاعتماد على الـ JWT claim مباشرة في حال لم يوجد صف للمستخدم في جدول users
+  (auth.jwt() ->> 'role') = 'admin'
 );
 
 DROP POLICY IF EXISTS "Guardians can update their children" ON children;

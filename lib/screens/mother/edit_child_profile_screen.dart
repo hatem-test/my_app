@@ -164,7 +164,7 @@ class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
                     _buildGenderSelector(width),
                     SizedBox(height: width * 0.04),
                     DropdownButtonFormField<String>(
-                      value: _selectedClass,
+                      initialValue: _selectedClass,
                       items: _classes
                           .map(
                               (c) => DropdownMenuItem(value: c, child: Text(c)))

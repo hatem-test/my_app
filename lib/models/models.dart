@@ -1,5 +1,6 @@
 /// مكتبة نماذج البيانات للنظام
 /// تسهل عملية استيراد جميع النماذج من ملف واحد
+library;
 
 export 'user_model.dart';
 export 'child_model.dart';

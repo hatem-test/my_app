@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/widgets/language_toggle_button.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -47,22 +48,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('الملف الشخصي'),
         actions: [
+          const LanguageToggleButton(),
+          const SizedBox(width: 8),
           IconButton(
             icon: Icon(_isEditing ? Icons.check : Icons.edit),
-            onPressed: () {
+            onPressed: () async {
               if (_isEditing) {
                 if (_formKey.currentState!.validate()) {
-                  // TODO: Implement Save changes via Service/Repository
-                  setState(() => _isEditing = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('تم حفظ التغييرات بنجاح')),
+                  final success = await authProvider.updateProfile(
+                    name: _nameController.text,
+                    phone: _phoneController.text,
                   );
+                  if (success) {
+                    setState(() => _isEditing = false);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('تم حفظ التغييرات بنجاح')),
+                      );
+                    }
+                  } else {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(authProvider.errorMessage ??
+                              'حدث خطأ أثناء الحفظ'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
                 }
               } else {
                 setState(() => _isEditing = true);
               }
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
@@ -134,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.lock_outline,
                   color: AppColors.primary,
                   onTap: () {
-                    // Show Change Password Dialog
+                    _showChangePasswordDialog(context, authProvider);
                   },
                 ),
                 _buildActionTile(
@@ -217,5 +238,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
             size: width * 0.04, color: color.withValues(alpha: 0.5)),
       );
     });
+  }
+
+  void _showChangePasswordDialog(
+      BuildContext context, AuthProvider authProvider) {
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تغيير كلمة المرور'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'كلمة المرور الجديدة',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.length < 6) {
+                return 'يجب أن تكون كلمة المرور 6 أحرف على الأقل';
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context);
+                final success =
+                    await authProvider.changePassword(passwordController.text);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success
+                          ? 'تم تغيير كلمة المرور بنجاح'
+                          : (authProvider.errorMessage ?? 'حدث خطأ')),
+                      backgroundColor:
+                          success ? AppColors.success : AppColors.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
   }
 }

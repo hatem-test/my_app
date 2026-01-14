@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/teacher_provider.dart';
 import '../../models/models.dart';
+import '../../core/widgets/language_toggle_button.dart';
 
 class TeacherProfileScreen extends StatelessWidget {
   const TeacherProfileScreen({super.key});
@@ -19,8 +20,9 @@ class TeacherProfileScreen extends StatelessWidget {
     final teacherProvider = context.watch<TeacherProvider>();
     final teacher = teacherProvider.profile;
 
-    if (teacher == null)
+    if (teacher == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
@@ -28,6 +30,10 @@ class TeacherProfileScreen extends StatelessWidget {
         title: const Text('الملف الشخصي'),
         centerTitle: true,
         elevation: 0,
+        actions: const [
+          LanguageToggleButton(),
+          SizedBox(width: 16),
+        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(padding),
@@ -189,11 +195,11 @@ class TeacherProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),

@@ -58,4 +58,25 @@ class ReportRepository {
         .order('report_date', ascending: false)
         .map((data) => data.map((json) => ReportModel.fromJson(json)).toList());
   }
+
+  /// جلب جميع التقارير (للأدمن) مع إمكانية التصفية حسب التاريخ
+  /// يُرجع قائمة من Map تحتوي على بيانات التقرير والطفل والمعلمة
+  Future<List<Map<String, dynamic>>> getAllReports({DateTime? date}) async {
+    var query = _client.from('reports').select('''
+      *,
+      children:child_id(name, gender, image_url),
+      teachers:teacher_id(
+        users:user_id(name)
+      )
+    ''');
+
+    if (date != null) {
+      final dateString = date.toIso8601String().split('T').first;
+      query = query.eq('report_date', dateString);
+    }
+
+    final response = await query.order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
 }

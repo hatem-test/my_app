@@ -146,7 +146,7 @@ class _NotificationSettingsScreenState
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 12,
           ),
@@ -156,7 +156,7 @@ class _NotificationSettingsScreenState
           child: Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary,
+            activeThumbColor: AppColors.primary,
           ),
         ),
         onTap: () => onChanged(!value),
