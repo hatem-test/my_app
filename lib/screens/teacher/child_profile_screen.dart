@@ -26,7 +26,7 @@ class ChildProfileScreen extends StatelessWidget {
       {
         'icon': Icons.edit_note_rounded,
         'title': 'كتابة تقرير',
-        'color': AppColors.accent,
+        'color': AppColors.success,
         'route': '/teacher/report/$childId',
       },
       {

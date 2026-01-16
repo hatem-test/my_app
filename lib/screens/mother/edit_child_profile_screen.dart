@@ -26,6 +26,7 @@ class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
   String? _networkImageUrl;
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isDeleting = false;
 
   final _childrenRepo = ChildrenRepository();
 
@@ -106,6 +107,52 @@ class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
       }
+    }
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الحذف'),
+        content: const Text(
+            'هل أنت متأكد من حذف ملف الطفل؟ هذا الإجراء لا يمكن التراجع عنه.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('حذف', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isDeleting = true);
+    try {
+      await _childrenRepo.deleteChild(widget.childId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم حذف الطفل بنجاح'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        // Navigate to mother's home and let StreamProvider update the children list
+        context.go('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل الحذف: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
     }
   }
 
@@ -207,6 +254,37 @@ class _EditChildProfileScreenState extends State<EditChildProfileScreen> {
                                     color: Colors.white),
                               ),
                       ),
+                    ),
+                    SizedBox(height: width * 0.02),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: _isDeleting
+                          ? Center(
+                              child: SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    color: AppColors.error, strokeWidth: 2),
+                              ),
+                            )
+                          : OutlinedButton.icon(
+                              onPressed: _isSaving ? null : _confirmDelete,
+                              icon:
+                                  const Icon(Icons.delete, color: AppColors.error),
+                              label: const Text('حذف الطفل',
+                                  style: TextStyle(
+                                      color: AppColors.error,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16)),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppColors.error),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                backgroundColor: Colors.white,
+                              ),
+                            ),
                     ),
                   ],
                 ),

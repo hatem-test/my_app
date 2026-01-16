@@ -146,9 +146,12 @@ class _MotherHomeView extends StatelessWidget {
         onPressed: () => context.push('/add-child'),
         label: Text('إضافة طفل',
             style: GoogleFonts.cairo(
-                fontWeight: FontWeight.bold, fontSize: width * 0.04)),
-        icon: Icon(Icons.add, size: width * 0.06),
-        backgroundColor: AppColors.accent,
+                fontWeight: FontWeight.bold,
+                fontSize: width * 0.04,
+                color: Colors.white)),
+        icon: Icon(Icons.add, size: width * 0.06, color: Colors.white),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
       ),
     );
   }
@@ -234,9 +237,6 @@ class _MotherHomeView extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // يمكن جلب حالة الحضور الحقيقية هنا لاحقاً
-                  const _StatusChip(label: 'حضور', color: AppColors.success),
-                  const SizedBox(height: 4),
                   Icon(Icons.arrow_forward_ios_rounded,
                       color: AppColors.textDisabled, size: width * 0.04),
                 ],

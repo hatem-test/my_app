@@ -242,8 +242,8 @@ class _TeacherHomeView extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppColors.accent,
-              AppColors.accent.withOpacity(0.8),
+              AppColors.success,
+              AppColors.success.withOpacity(0.8),
             ],
             begin: Alignment.topRight,
             end: Alignment.bottomLeft,
@@ -251,7 +251,7 @@ class _TeacherHomeView extends StatelessWidget {
           borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.accent.withOpacity(0.4),
+              color: AppColors.success.withOpacity(0.4),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),

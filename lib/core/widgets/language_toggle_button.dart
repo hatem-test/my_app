@@ -17,20 +17,10 @@ class LanguageToggleButton extends StatelessWidget {
         appProvider
             .setLocale(isArabic ? const Locale('en') : const Locale('ar'));
       },
-      icon: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          border: Border.all(color: color ?? AppColors.primary, width: 1.5),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          isArabic ? 'EN' : 'عربي',
-          style: TextStyle(
-            color: color ?? AppColors.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
+      icon: Icon(
+        Icons.language,
+        color: color ?? AppColors.primary,
+        size: 20,
       ),
       tooltip: isArabic ? 'Switch to English' : 'تغيير للعربية',
     );

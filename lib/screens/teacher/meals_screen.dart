@@ -23,6 +23,24 @@ class _MealsScreenState extends State<MealsScreen> {
     });
   }
 
+  String _formatHeadingDate(DateTime date) {
+    final months = [
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر'
+    ];
+    return 'وجبات ${date.year} ${months[date.month - 1]} ${date.day}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final mealRepo = context.read<MealRepository>();
@@ -75,7 +93,7 @@ class _MealsScreenState extends State<MealsScreen> {
                 final allergies = child?.allergies ?? [];
 
                 return DefaultTabController(
-                  length: 2,
+                  length: 3,
                   child: Column(
                     children: [
                       const TabBar(
@@ -84,13 +102,14 @@ class _MealsScreenState extends State<MealsScreen> {
                         indicatorColor: AppColors.primary,
                         tabs: [
                           Tab(text: 'الوجبات المختارة'),
+                          Tab(text: 'وجبات اليوم'),
                           Tab(text: 'كل الوجبات'),
                         ],
                       ),
                       Expanded(
                         child: TabBarView(
                           children: [
-                            // قسم الوجبات المختارة
+                            // قسم الوجبات المختارة (unchanged)
                             StreamBuilder<List<MealSelectionModel>>(
                               stream: mealRepo.watchMealSelections(widget.childId!, today),
                               builder: (context, selectionsSnapshot) {
@@ -170,10 +189,97 @@ class _MealsScreenState extends State<MealsScreen> {
                                 );
                               },
                             ),
-                            // قسم كل الوجبات
+
+                            // قسم وجبات اليوم (stream for live updates)
+                            StreamBuilder<List<MealModel>>(
+                              stream: mealRepo.watchTodayMeals(),
+                              builder: (context, mealsSnapshot) {
+                                if (mealsSnapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+
+                                if (mealsSnapshot.hasError) {
+                                  return Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(padding),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.error_outline,
+                                              size: 64, color: AppColors.error),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'حدث خطأ أثناء جلب وجبات اليوم: ${mealsSnapshot.error}',
+                                            style: TextStyle(
+                                              fontSize: isSmallScreen ? 14 : 16,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          ElevatedButton(
+                                            onPressed: _refresh,
+                                            child: const Text('إعادة المحاولة'),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                final meals = mealsSnapshot.data ?? [];
+
+                                return RefreshIndicator(
+                                  onRefresh: () async {
+                                    // For stream-based tab, trigger a manual refresh by
+                                    // bumping the local key (server push should handle it usually).
+                                    _refresh();
+                                  },
+                                  child: SingleChildScrollView(
+                                    padding: EdgeInsets.all(padding),
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (allergies.isNotEmpty) ...[
+                                          _buildAllergyWarning(
+                                              allergies, isSmallScreen),
+                                          SizedBox(
+                                              height: isSmallScreen ? 16 : 20),
+                                        ],
+                                        Text(
+                                          'وجبات اليوم',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineMedium
+                                              ?.copyWith(
+                                                fontSize:
+                                                    isSmallScreen ? 18 : 20,
+                                              ),
+                                        ),
+                                        SizedBox(height: isSmallScreen ? 12 : 16),
+                                        if (meals.isEmpty)
+                                          _buildEmptyState(isSmallScreen, padding)
+                                        else
+                                          ...meals.map((meal) =>
+                                              _buildMealCard(meal, isSmallScreen)),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            // قسم كل الوجبات - grouped by date
                             FutureBuilder<List<MealModel>>(
                               key: ValueKey(_refreshKey),
-                              future: mealRepo.getTodayMeals(),
+                              future: mealRepo.getAllMeals(),
                               builder: (context, mealsSnapshot) {
                                 if (mealsSnapshot.connectionState ==
                                     ConnectionState.waiting) {
@@ -214,11 +320,26 @@ class _MealsScreenState extends State<MealsScreen> {
 
                                 final meals = mealsSnapshot.data ?? [];
 
+                                if (meals.isEmpty) {
+                                  return _buildEmptyState(isSmallScreen, padding);
+                                }
+
+                                // Group meals by date string
+                                final groups = <String, List<MealModel>>{};
+                                for (final meal in meals) {
+                                  final dateKey = meal.mealDate
+                                      .toIso8601String()
+                                      .split('T')
+                                      .first;
+                                  groups.putIfAbsent(dateKey, () => []).add(meal);
+                                }
+
+                                // Sort dates descending
+                                final dateKeys = groups.keys.toList()
+                                  ..sort((a, b) => b.compareTo(a));
+
                                 return RefreshIndicator(
-                                  onRefresh: () async {
-                                    // إعادة تحميل البيانات
-                                    _refresh();
-                                  },
+                                  onRefresh: () async => _refresh(),
                                   child: SingleChildScrollView(
                                     padding: EdgeInsets.all(padding),
                                     physics:
@@ -227,28 +348,22 @@ class _MealsScreenState extends State<MealsScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        if (allergies.isNotEmpty) ...[
-                                          _buildAllergyWarning(
-                                              allergies, isSmallScreen),
-                                          SizedBox(
-                                              height: isSmallScreen ? 16 : 20),
+                                        for (final dateKey in dateKeys) ...[
+                                          SizedBox(height: isSmallScreen ? 12 : 16),
+                                          Text(
+                                            _formatHeadingDate(
+                                                DateTime.parse(dateKey)),
+                                            style: TextStyle(
+                                              fontSize: isSmallScreen ? 16 : 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          SizedBox(height: isSmallScreen ? 8 : 12),
+                                          ...groups[dateKey]!
+                                              .map((meal) => _buildMealCard(
+                                                  meal, isSmallScreen)),
                                         ],
-                                        Text(
-                                          'وجبات اليوم',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headlineMedium
-                                              ?.copyWith(
-                                                fontSize:
-                                                    isSmallScreen ? 18 : 20,
-                                              ),
-                                        ),
-                                        SizedBox(height: isSmallScreen ? 12 : 16),
-                                        if (meals.isEmpty)
-                                          _buildEmptyState(isSmallScreen, padding)
-                                        else
-                                          ...meals.map((meal) =>
-                                              _buildMealCard(meal, isSmallScreen)),
                                       ],
                                     ),
                                   ),
@@ -781,6 +896,25 @@ class _AddMealDialogState extends State<_AddMealDialog> {
       'ديسمبر'
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _formatHeadingDate(DateTime date) {
+    final months = [
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر'
+    ];
+    // Format: وجبات YYYY MONTH DAY
+    return 'وجبات ${date.year} ${months[date.month - 1]} ${date.day}';
   }
 
   void _addItem(String item) {

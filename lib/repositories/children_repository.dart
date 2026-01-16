@@ -186,7 +186,47 @@ class ChildrenRepository {
 
   /// حذف طفل
   Future<void> deleteChild(String id) async {
-    await _client.from('children').delete().eq('id', id);
+    try {
+      // First, try to read the row to determine if it's visible to the current
+      // user (could be hidden by RLS) or if it does not exist at all.
+      final existing = await _client
+          .from('children')
+          .select('id')
+          .eq('id', id)
+          .maybeSingle();
+
+      if (existing == null) {
+        // Either the record doesn't exist or current user has no read access.
+        throw 'السجل غير موجود أو لا يمكنك عرضه (قد تكون مشكلة في الصلاحيات - RLS). تحقق من أن الـ id صحيح ومن سياسات الوصول.';
+      }
+
+      // Attempt deletion and request the deleted row back to confirm.
+      final response = await _client
+          .from('children')
+          .delete()
+          .eq('id', id)
+          .select('id')
+          .maybeSingle();
+
+      if (response == null) {
+        // The row existed (was readable) but deletion returned nothing -> likely
+        // a permission issue for delete operation specifically.
+        throw 'فشل حذف الطفل: لا توجد صلاحيات كافية لحذف السجل (RLS).';
+      }
+
+      debugPrint('DEBUG: deleteChild - Deleted child id=$id');
+    } on PostgrestException catch (e) {
+      debugPrint('PostgrestException in deleteChild: ${e.code} - ${e.message}');
+      if ((e.message ?? '').contains('permission denied') ||
+          (e.message ?? '').contains('RLS') ||
+          e.code == 'PGRST116') {
+        throw 'فشل حذف الطفل: لا توجد صلاحيات كافية لحذف السجل (RLS).';
+      }
+      rethrow;
+    } catch (e) {
+      debugPrint('Error deleting child: $e');
+      rethrow;
+    }
   }
 
   /// رفع صورة الطفل إلى Supabase Storage
