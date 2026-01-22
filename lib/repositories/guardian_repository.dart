@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
+import 'dart:async';
 
 class GuardianRepository {
   final SupabaseClient _client = Supabase.instance.client;
@@ -29,22 +30,44 @@ class GuardianRepository {
 
   /// جلب بيانات ولي أمر محدد
   Future<GuardianModel?> getGuardianById(String id) async {
-    final response = await _client
-        .from('guardians')
-        .select('*, users(*)')
-        .eq('id', id)
-        .maybeSingle();
-    return response != null ? GuardianModel.fromJson(response) : null;
+    try {
+      final response = await _client
+          .from('guardians')
+          .select('*, users(*)')
+          .eq('id', id)
+          .maybeSingle()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException(
+                'تم تجاوز وقت انتظار التحميل'),
+          );
+      return response != null ? GuardianModel.fromJson(response) : null;
+    } on TimeoutException {
+      rethrow;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// جلب بيانات ولي الأمر عن طريق ID المستخدم
   Future<GuardianModel?> getGuardianByUserId(String userId) async {
-    final response = await _client
-        .from('guardians')
-        .select('*, users(*)')
-        .eq('user_id', userId)
-        .maybeSingle();
-    return response != null ? GuardianModel.fromJson(response) : null;
+    try {
+      final response = await _client
+          .from('guardians')
+          .select('*, users(*)')
+          .eq('user_id', userId)
+          .maybeSingle()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException(
+                'تم تجاوز وقت انتظار التحميل'),
+          );
+      return response != null ? GuardianModel.fromJson(response) : null;
+    } on TimeoutException {
+      rethrow;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// تحديث بيانات ولي الأمر
@@ -123,9 +146,24 @@ class GuardianRepository {
 
   /// إنشاء سجل ولي أمر هيكلي (تلقائي)
   Future<void> createGuardianSkeleton(String userId) async {
-    await _client.from('guardians').upsert({
-      'user_id': userId,
-      'relationship': 'أم',
-    });
+    try {
+      await _client
+          .from('guardians')
+          .upsert({
+            'user_id': userId,
+            'relationship': 'أم',
+          })
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException(
+                'انتهت مهلة إنشاء السجل'),
+          );
+    } on TimeoutException {
+      // لا نوقف العملية بسبب timeout في الإنشاء
+      print('Warning: Timeout creating guardian skeleton');
+    } catch (e) {
+      // لا نوقف العملية بسبب خطأ في الإنشاء
+      print('Warning: Could not create guardian skeleton: $e');
+    }
   }
 }

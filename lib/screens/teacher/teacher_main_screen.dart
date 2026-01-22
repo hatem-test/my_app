@@ -16,6 +16,8 @@ class TeacherMainScreen extends StatefulWidget {
 }
 
 class _TeacherMainScreenState extends State<TeacherMainScreen> {
+  bool _loadingInitiated = false;
+
   @override
   Widget build(BuildContext context) {
     return Consumer<TeacherProvider>(
@@ -25,15 +27,22 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
         final userId = authProvider.currentUser?.id;
 
         if (userId != null &&
-            !teacherProvider.isLoading &&
-            (teacherProvider.profile == null ||
-                teacherProvider.profile!.userId != userId)) {
+            !_loadingInitiated &&
+            teacherProvider.profile == null) {
+          _loadingInitiated = true;
           // استدعاء التحميل في microtask لتجنب استدعائه مباشرة داخل build
           Future.microtask(() {
             if (mounted) {
               context.read<TeacherProvider>().loadProfile(userId);
             }
           });
+        }
+
+        // إعادة تعيين العلم عند تغيير المستخدم
+        if (userId != null &&
+            _loadingInitiated &&
+            teacherProvider.profile?.userId != userId) {
+          _loadingInitiated = false;
         }
 
         if (teacherProvider.isLoading) {
@@ -45,6 +54,11 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
                   Text('جاري تحميل بيانات المعلمة...'),
+                  SizedBox(height: 8),
+                  Text(
+                    'قد يستغرق بعض الوقت',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                 ],
               ),
             ),
@@ -64,13 +78,14 @@ class _TeacherMainScreenState extends State<TeacherMainScreen> {
                     const SizedBox(height: 16),
                     Text(
                       teacherProvider.error ??
-                          'لم يتم العثور على بيانات المعلمة',
+                          'لم يتم العثور على بيانات المعلمة. تأكد من اتصالك بالإنترنت.',
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
+                        _loadingInitiated = false;
                         final userId = context.read<AuthProvider>().currentUser?.id;
                         if (userId != null) {
                           context.read<TeacherProvider>().loadProfile(userId);

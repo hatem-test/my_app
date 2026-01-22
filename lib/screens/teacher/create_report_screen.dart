@@ -131,49 +131,100 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   }
 
   Widget _buildHeaderCard(bool isSmallScreen) {
+    final now = DateTime.now();
+    final day = now.day.toString();
+    final month = _getArabicMonth(now.month);
+    final weekday = _getArabicWeekday(now.weekday);
+
     return Container(
-      padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.accent, AppColors.accent.withOpacity(0.8)],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
+          // Date Badge
           Container(
-            padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(12),
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 12 : 16,
+              vertical: isSmallScreen ? 8 : 12,
             ),
-            child: Icon(
-              Icons.edit_document,
-              color: Colors.white,
-              size: isSmallScreen ? 24 : 28,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  day,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 20 : 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    height: 1.0,
+                  ),
+                ),
+                Text(
+                  month,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 12 : 14,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(width: isSmallScreen ? 12 : 16),
+          // Title & Subtitle
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'التقرير اليومي',
-                  style: TextStyle(
-                    fontSize: isSmallScreen ? 16 : 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'تقرير اليوم',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 16 : 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        weekday,
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 10 : 12,
+                          color: AppColors.success,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'املأ البيانات التالية لإرسال التقرير',
+                  'تسجيل النشاط اليومي للطفل',
                   style: TextStyle(
-                    fontSize: isSmallScreen ? 11 : 13,
-                    color: Colors.white70,
+                    fontSize: isSmallScreen ? 12 : 14,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -182,6 +233,37 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         ],
       ),
     );
+  }
+
+  String _getArabicMonth(int month) {
+    const months = [
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر'
+    ];
+    return months[month - 1];
+  }
+
+  String _getArabicWeekday(int weekday) {
+    const weekdays = [
+      'الاثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد'
+    ];
+    return weekdays[weekday - 1];
   }
 
   Widget _buildDropdownField({
@@ -199,9 +281,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
         boxShadow: const [
           BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 8,
-              offset: Offset(0, 2)),
+              color: AppColors.shadow, blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -268,9 +348,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
         boxShadow: const [
           BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 8,
-              offset: Offset(0, 2)),
+              color: AppColors.shadow, blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -378,8 +456,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     if (teacher == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('تعذّر جلب بيانات المعلمة، يرجى إعادة فتح التطبيق والمحاولة'),
+          content: Text(
+              'تعذّر جلب بيانات المعلمة، يرجى إعادة فتح التطبيق والمحاولة'),
         ),
       );
       return;

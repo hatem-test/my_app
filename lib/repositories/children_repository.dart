@@ -130,10 +130,55 @@ class ChildrenRepository {
   }
 
   /// جلب أطفال فصل معين أو معلم معين
+  /// جلب جميع الأطفال المرتبطين بمعلمة معينة
+  /// تم تحسينها لجلب جميع النتائج بدون حد أقصى
   Future<List<ChildModel>> getChildrenByTeacher(String teacherId) async {
-    final response =
-        await _client.from('children').select().eq('teacher_id', teacherId);
-    return (response as List).map((json) => ChildModel.fromJson(json)).toList();
+    try {
+      print('DEBUG: getChildrenByTeacher - Fetching ALL children for teacher: $teacherId');
+      
+      // استعلام محسّن: جلب جميع البيانات بدون حدود
+      // Supabase قد يكون له حد أقصى افتراضي، لذا نحاول جلب بدون limit
+      final response = await _client
+          .from('children')
+          .select()
+          .eq('teacher_id', teacherId)
+          .order('name', ascending: true);
+      
+      final children = (response as List).map((json) => ChildModel.fromJson(json)).toList();
+      
+      print('DEBUG: getChildrenByTeacher SUCCESS - Found ${children.length} children');
+      print('DEBUG: Teacher ID being searched: $teacherId');
+      
+      // طباعة جميع الأطفال المرجعة
+      for (int i = 0; i < children.length; i++) {
+        final child = children[i];
+        print('  [$i] ID: ${child.id}, Name: ${child.name}, TeacherId: ${child.teacherId}');
+      }
+      
+      if (children.isEmpty) {
+        print('WARNING: No children found for teacher $teacherId');
+        // محاولة بديلة: جلب جميع الأطفال والفلترة يدويًا
+        print('DEBUG: Trying fallback - fetching ALL children and filtering locally...');
+        final allResponse = await _client.from('children').select('*');
+        final allChildren = (allResponse as List).map((json) => ChildModel.fromJson(json)).toList();
+        print('DEBUG: Total children in system: ${allChildren.length}');
+        
+        final filtered = allChildren.where((c) => c.teacherId == teacherId).toList();
+        print('DEBUG: After local filtering: ${filtered.length} children match teacher $teacherId');
+        
+        for (int i = 0; i < filtered.length; i++) {
+          final child = filtered[i];
+          print('  FALLBACK [$i] ID: ${child.id}, Name: ${child.name}, TeacherId: ${child.teacherId}');
+        }
+        
+        return filtered;
+      }
+      
+      return children;
+    } catch (e) {
+      print('ERROR: getChildrenByTeacher - Error: $e');
+      rethrow;
+    }
   }
 
   /// جلب بيانات طفل محدد
@@ -261,19 +306,51 @@ class ChildrenRepository {
 
   /// الاستماع لتغييرات قائمة أطفال ولي أمر معين
   Stream<List<ChildModel>> watchChildrenByGuardian(String guardianId) {
+    print('DEBUG: watchChildrenByGuardian - Setting up stream for guardian: $guardianId');
     return _client
         .from('children')
         .stream(primaryKey: ['id'])
         .eq('guardian_id', guardianId)
-        .map((data) => data.map((json) => ChildModel.fromJson(json)).toList());
+        .order('name')
+        .map((data) {
+          print('DEBUG: watchChildrenByGuardian - Stream emitted with ${data.length} children');
+          final children = data.map((json) => ChildModel.fromJson(json)).toList();
+          
+          for (int i = 0; i < children.length; i++) {
+            final child = children[i];
+            print('  STREAM GUARDIAN [$i] ID: ${child.id}, Name: ${child.name}');
+          }
+          
+          return children;
+        })
+        .handleError((error) {
+          print('ERROR: watchChildrenByGuardian - Stream error: $error');
+        });
   }
 
   /// الاستماع لتغييرات قائمة أطفال فصل معين أو معلم معين
+  /// الاستماع لتغييرات قائمة أطفال معلمة معينة (Real-time)
+  /// تم تحسينها لضمان جلب جميع الأطفال
   Stream<List<ChildModel>> watchChildrenByTeacher(String teacherId) {
+    print('DEBUG: watchChildrenByTeacher - Setting up stream for teacher: $teacherId');
     return _client
         .from('children')
         .stream(primaryKey: ['id'])
         .eq('teacher_id', teacherId)
-        .map((data) => data.map((json) => ChildModel.fromJson(json)).toList());
+        .order('name')
+        .map((data) {
+          print('DEBUG: watchChildrenByTeacher - Stream emitted with ${data.length} children');
+          final children = data.map((json) => ChildModel.fromJson(json)).toList();
+          
+          for (int i = 0; i < children.length; i++) {
+            final child = children[i];
+            print('  STREAM [$i] ID: ${child.id}, Name: ${child.name}, TeacherId: ${child.teacherId}');
+          }
+          
+          return children;
+        })
+        .handleError((error) {
+          print('ERROR: watchChildrenByTeacher - Stream error: $error');
+        });
   }
 }

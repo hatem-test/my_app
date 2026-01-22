@@ -66,7 +66,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             children: [
               Image.asset(
                 'assets/images/login_singup.png',
-                width: width * 0.15,
+                width: width * 0.05, // Reduced size to not dominate
+                height: height * 0.30,
               ),
               SizedBox(height: height * 0.04),
               TextFormField(
@@ -106,9 +107,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 ),
                 items: const [
                   DropdownMenuItem(value: UserRole.mother, child: Text('أم')),
-                  DropdownMenuItem(
-                      value: UserRole.teacher, child: Text('معلمة')),
-                  DropdownMenuItem(value: UserRole.admin, child: Text('مدير')),
+                  DropdownMenuItem(value: UserRole.teacher, child: Text('معلمة')),
                 ],
                 onChanged: (role) => setState(() => _selectedRole = role!),
               ),

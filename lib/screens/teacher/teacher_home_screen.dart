@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/providers/data_providers.dart';
+import '../../repositories/children_repository.dart';
 import '../../core/providers/teacher_provider.dart';
 import '../../models/models.dart';
 
@@ -28,23 +28,25 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
     final teacherProvider = context.watch<TeacherProvider>();
     final teacher = teacherProvider.profile;
 
-    if (teacher == null) return const SizedBox.shrink();
+    debugPrint(
+        'DEBUG: TeacherHomeScreen - Teacher: ${teacher?.id} - ${teacher?.name}');
+
+    if (teacher == null) {
+      debugPrint('DEBUG: TeacherHomeScreen - Teacher is null!');
+      return const SizedBox.shrink();
+    }
 
     final teacherId = teacher.id;
+    debugPrint('DEBUG: TeacherHomeScreen - Using teacherId: $teacherId');
 
-    return MultiProvider(
-      providers: [
-        DataProviders.childrenProvider(teacherId),
-      ],
-      child: _TeacherHomeView(
-        searchController: _searchController,
-        teacherId: teacherId,
-      ),
+    return _TeacherHomeView(
+      searchController: _searchController,
+      teacherId: teacherId,
     );
   }
 }
 
-class _TeacherHomeView extends StatelessWidget {
+class _TeacherHomeView extends StatefulWidget {
   final TextEditingController searchController;
   final String teacherId;
 
@@ -54,39 +56,39 @@ class _TeacherHomeView extends StatelessWidget {
   });
 
   @override
+  State<_TeacherHomeView> createState() => _TeacherHomeViewState();
+}
+
+class _TeacherHomeViewState extends State<_TeacherHomeView> {
+  late Future<List<ChildModel>?> _childrenFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // تخزين الـ future مرة واحدة فقط في initState
+    _childrenFuture = context
+        .read<ChildrenRepository>()
+        .getChildrenByTeacher(widget.teacherId);
+  }
+
+  void _refreshChildren() {
+    setState(() {
+      _childrenFuture = context
+          .read<ChildrenRepository>()
+          .getChildrenByTeacher(widget.teacherId);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final childrenAsync = context.watch<List<ChildModel>?>();
+    debugPrint('DEBUG: TeacherHomeView build called');
+
     final size = MediaQuery.of(context).size;
     final screenWidth = size.width;
     final screenHeight = size.height;
     final isSmallScreen = screenWidth < 360;
 
     final padding = screenWidth * 0.04;
-    final cardPadding = isSmallScreen ? 14.0 : 20.0;
-
-    // Show loading state while children are being fetched
-    if (childrenAsync == null) {
-      return Scaffold(
-        backgroundColor: AppColors.backgroundPrimary,
-        appBar: AppBar(
-          title: const Text('الرئيسية'),
-          centerTitle: true,
-          elevation: 0,
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    final children = childrenAsync;
-
-    // Filter children based on search
-    final filteredChildren = children
-        .where((child) => child.name
-            .toLowerCase()
-            .contains(searchController.text.toLowerCase()))
-        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundPrimary,
@@ -96,9 +98,75 @@ class _TeacherHomeView extends StatelessWidget {
         elevation: 0,
       ),
       body: SafeArea(
-        child: RefreshIndicator(
+        child: _buildChildrenList(
+          context,
+          widget.teacherId,
+          padding,
+          isSmallScreen,
+          screenHeight,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChildrenList(
+    BuildContext context,
+    String teacherId,
+    double padding,
+    bool isSmallScreen,
+    double screenHeight,
+  ) {
+    return FutureBuilder<List<ChildModel>?>(
+      future: _childrenFuture,
+      builder: (context, snapshot) {
+        debugPrint(
+            'DEBUG: FutureBuilder connectionState: ${snapshot.connectionState}');
+        debugPrint('DEBUG: FutureBuilder data: ${snapshot.data}');
+        debugPrint('DEBUG: FutureBuilder error: ${snapshot.error}');
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red.withOpacity(0.5),
+                ),
+                const SizedBox(height: 16),
+                Text('حدث خطأ: ${snapshot.error}'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _refreshChildren,
+                  child: const Text('محاولة مجددا'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final children = snapshot.data ?? [];
+        debugPrint('DEBUG: Received ${children.length} children');
+
+        // Filter children based on search
+        final filteredChildren = children
+            .where((child) => child.name
+                .toLowerCase()
+                .contains(widget.searchController.text.toLowerCase()))
+            .toList();
+
+        debugPrint('DEBUG: After filter: ${filteredChildren.length} children');
+
+        return RefreshIndicator(
           onRefresh: () async {
-            (context as Element).markNeedsBuild();
+            _refreshChildren();
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -107,13 +175,6 @@ class _TeacherHomeView extends StatelessWidget {
                 child: Padding(
                   padding: EdgeInsets.all(padding),
                   child: _buildSearchField(context, isSmallScreen),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: padding),
-                  child: _buildQuickActionCard(
-                      context, cardPadding, isSmallScreen),
                 ),
               ),
               SliverToBoxAdapter(
@@ -143,22 +204,19 @@ class _TeacherHomeView extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            searchController.text.isEmpty
+                            widget.searchController.text.isEmpty
                                 ? 'لا يوجد أطفال مسجلين تحت إشرافك حالياً'
-                                : 'لا يوجد نتائج للبحث عن "${searchController.text}"',
+                                : 'لا يوجد نتائج للبحث عن "${widget.searchController.text}"',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: isSmallScreen ? 14 : 16,
                             ),
                           ),
-                          if (searchController.text.isEmpty) ...[
+                          if (widget.searchController.text.isEmpty) ...[
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
-                              onPressed: () {
-                                // Trigger a rebuild and re-fetch
-                                (context as Element).markNeedsBuild();
-                              },
+                              onPressed: _refreshChildren,
                               icon: const Icon(Icons.refresh),
                               label: const Text('تحديث القائمة'),
                             ),
@@ -182,8 +240,8 @@ class _TeacherHomeView extends StatelessWidget {
               SliverToBoxAdapter(child: SizedBox(height: screenHeight * 0.03)),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -201,25 +259,25 @@ class _TeacherHomeView extends StatelessWidget {
         ],
       ),
       child: TextField(
-        controller: searchController,
+        controller: widget.searchController,
         textDirection: TextDirection.rtl,
         onChanged: (_) {
           // Trigger rebuild to update filteredChildren
-          (context as Element).markNeedsBuild();
+          setState(() {});
         },
         decoration: InputDecoration(
           hintText: 'ابحث عن طفل...',
           hintTextDirection: TextDirection.rtl,
           prefixIcon: Icon(Icons.search,
               color: AppColors.textSecondary, size: isSmallScreen ? 20 : 24),
-          suffixIcon: searchController.text.isNotEmpty
+          suffixIcon: widget.searchController.text.isNotEmpty
               ? IconButton(
                   icon: Icon(Icons.clear,
                       color: AppColors.textSecondary,
                       size: isSmallScreen ? 18 : 22),
                   onPressed: () {
-                    searchController.clear();
-                    (context as Element).markNeedsBuild();
+                    widget.searchController.clear();
+                    setState(() {});
                   },
                 )
               : null,
@@ -228,79 +286,6 @@ class _TeacherHomeView extends StatelessWidget {
             horizontal: isSmallScreen ? 14 : 20,
             vertical: isSmallScreen ? 12 : 16,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard(
-      BuildContext context, double cardPadding, bool isSmallScreen) {
-    return GestureDetector(
-      onTap: () => context.push('/teacher/report'),
-      child: Container(
-        padding: EdgeInsets.all(cardPadding),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.success,
-              AppColors.success.withOpacity(0.8),
-            ],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-          ),
-          borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.success.withOpacity(0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.edit_note_rounded,
-                color: Colors.white,
-                size: isSmallScreen ? 26 : 32,
-              ),
-            ),
-            SizedBox(width: isSmallScreen ? 12 : 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'كتابة تقرير',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: isSmallScreen ? 16 : 20,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'إنشاء تقرير يومي جديد',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: isSmallScreen ? 12 : 14,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: Colors.white,
-              size: isSmallScreen ? 16 : 20,
-            ),
-          ],
         ),
       ),
     );

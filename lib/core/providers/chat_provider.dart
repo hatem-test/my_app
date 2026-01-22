@@ -1,37 +1,24 @@
 import 'package:flutter/foundation.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/chat_message.dart';
+import '../../services/n8n_service.dart';
 
 class ChatProvider extends ChangeNotifier {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
-
-  // TODO: Secure API Key handling usually expected
-  // Using a placeholder or public instruction for now as I don't have user's key
-  // The user will need to replace this or set via env
-  static const String _apiKey = 'AIzaSyA4DEW35vbzCr0FkhZjjB2B2KghXz8oKi0';
-  late final GenerativeModel _model;
-  late final ChatSession _chat;
+  final N8nService _n8nService = N8nService();
 
   ChatProvider() {
-    _initModel();
+    _addWelcomeMessage();
   }
 
-  void _initModel() {
-    // Safety fallback if key is not set
-    try {
-      _model = GenerativeModel(model: 'gemini-pro', apiKey: _apiKey);
-      _chat = _model.startChat();
-
-      // Add initial welcome message
-      _messages.add(ChatMessage(
-        text: 'مرحباً! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟',
-        isUser: false,
-        timestamp: DateTime.now(),
-      ));
-    } catch (e) {
-      debugPrint('Error initializing Gemini: $e');
-    }
+  void _addWelcomeMessage() {
+    _messages.add(ChatMessage(
+      text:
+          'مرحباً! أنا مساعدك الذكي الخاص بطفلك. اسأليني عن يومه أو وجباته وسأجيبك.',
+      isUser: false,
+      timestamp: DateTime.now(),
+    ));
   }
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
@@ -40,6 +27,7 @@ class ChatProvider extends ChangeNotifier {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
+    // Add user message
     _messages.add(ChatMessage(
       text: text,
       isUser: true,
@@ -49,19 +37,26 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _chat.sendMessage(Content.text(text));
-      final responseText = response.text;
+      final user = Supabase.instance.client.auth.currentUser;
 
-      if (responseText != null) {
-        _messages.add(ChatMessage(
-          text: responseText,
-          isUser: false,
-          timestamp: DateTime.now(),
-        ));
-      }
-    } catch (e) {
+      final response = await _n8nService.sendMessage(
+        message: text,
+        userId: user?.id,
+        userEmail: user?.email,
+      );
+
+      // Extract answer from response
+      final String answer = response['answer'] ?? 'عذراً، لم أستطع فهم الرد.';
+
       _messages.add(ChatMessage(
-        text: 'عذراً، حدث خطأ أثناء الاتصال بالخادم. يرجى التأكد من مفتاح API.',
+        text: answer,
+        isUser: false,
+        timestamp: DateTime.now(),
+      ));
+    } catch (e) {
+      // In case of error (like 404/500), we show a user friendly message
+      _messages.add(ChatMessage(
+        text: 'عذراً، حدث خطأ في الاتصال. يرجى المحاولة لاحقاً.',
         isUser: false,
         timestamp: DateTime.now(),
       ));

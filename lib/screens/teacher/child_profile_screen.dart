@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/models.dart';
+import '../../repositories/children_repository.dart';
 
-class ChildProfileScreen extends StatelessWidget {
+class ChildProfileScreen extends StatefulWidget {
   final String childId;
 
   const ChildProfileScreen({super.key, required this.childId});
+
+  @override
+  State<ChildProfileScreen> createState() => _ChildProfileScreenState();
+}
+
+class _ChildProfileScreenState extends State<ChildProfileScreen> {
+  late Future<ChildModel?> _childFuture;
+  final ChildrenRepository _childrenRepository = ChildrenRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _childFuture = _childrenRepository.getChildById(widget.childId);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,44 +30,42 @@ class ChildProfileScreen extends StatelessWidget {
     final isSmallScreen = screenWidth < 360;
     final padding = screenWidth * 0.04;
 
-    // Mock child data
-    final child = {
-      'name': 'أحمد محمد',
-      'age': '4 سنوات',
-      'gender': 'ذكر',
-      'class': 'الصف الأول',
-    };
-
     final List<Map<String, dynamic>> actions = [
       {
         'icon': Icons.edit_note_rounded,
         'title': 'كتابة تقرير',
         'color': AppColors.success,
-        'route': '/teacher/report/$childId',
+        'route': '/teacher/report/${widget.childId}',
       },
       {
         'icon': Icons.restaurant_rounded,
         'title': 'الوجبات',
         'color': AppColors.secondary,
-        'route': '/teacher/meals/$childId',
+        'route': '/teacher/meals/${widget.childId}',
       },
       {
         'icon': Icons.medical_services_rounded,
         'title': 'الحالة الصحية',
         'color': const Color(0xFFEF5350),
-        'route': '/teacher/health/$childId',
+        'route': '/teacher/health/${widget.childId}',
       },
       {
         'icon': Icons.notes_rounded,
         'title': 'الملاحظات',
         'color': AppColors.primary,
-        'route': '/teacher/notes/$childId',
+        'route': '/teacher/notes/${widget.childId}',
       },
       {
         'icon': Icons.phone_rounded,
         'title': 'معلومات التواصل',
         'color': const Color(0xFF7E57C2),
-        'route': '/teacher/contact/$childId',
+        'route': '/teacher/contact/${widget.childId}',
+      },
+      {
+        'icon': Icons.calendar_month_rounded,
+        'title': 'الحضور والغياب',
+        'color': const Color(0xFFF9A825),
+        'route': '/teacher/attendance/${widget.childId}',
       },
     ];
 
@@ -64,30 +78,52 @@ class ChildProfileScreen extends StatelessWidget {
           centerTitle: true,
           elevation: 0,
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.all(padding),
-          child: Column(
-            children: [
-              // Child Info Card
-              _buildChildInfoCard(context, child, isSmallScreen),
-              SizedBox(height: isSmallScreen ? 18 : 24),
+        body: FutureBuilder<ChildModel?>(
+          future: _childFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-              // Action Options
-              ...actions.map(
-                  (action) => _buildActionCard(context, action, isSmallScreen)),
-            ],
-          ),
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('حدث خطأ: ${snapshot.error}'),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data == null) {
+              return const Center(
+                child: Text('لم يتم العثور على بيانات الطفل'),
+              );
+            }
+
+            final child = snapshot.data!;
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.all(padding),
+              child: Column(
+                children: [
+                  // Child Info Card
+                  _buildChildInfoCard(context, child, isSmallScreen),
+                  SizedBox(height: isSmallScreen ? 18 : 24),
+
+                  // Action Options
+                  ...actions.map((action) =>
+                      _buildActionCard(context, action, isSmallScreen)),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
   Widget _buildChildInfoCard(
-      BuildContext context, Map<String, dynamic> child, bool isSmallScreen) {
-    final isMale = child['gender'] == 'ذكر';
+      BuildContext context, ChildModel child, bool isSmallScreen) {
+    final isMale = child.gender == Gender.boy;
     final color = isMale ? AppColors.boy : AppColors.girl;
-    final imagePath =
-        isMale ? 'assets/images/boy.png' : 'assets/images/girl.png';
+    final imagePath = child.imageUrl ?? child.defaultImagePath;
 
     return Container(
       padding: EdgeInsets.all(isSmallScreen ? 18 : 24),
@@ -128,15 +164,25 @@ class ChildProfileScreen extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(4.0),
               child: ClipOval(
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(
-                    Icons.person,
-                    size: isSmallScreen ? 35 : 45,
-                    color: color,
-                  ),
-                ),
+                child: imagePath.startsWith('http')
+                    ? Image.network(
+                        imagePath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.person,
+                          size: isSmallScreen ? 35 : 45,
+                          color: color,
+                        ),
+                      )
+                    : Image.asset(
+                        imagePath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.person,
+                          size: isSmallScreen ? 35 : 45,
+                          color: color,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -146,7 +192,7 @@ class ChildProfileScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  child['name'],
+                  child.name,
                   style: TextStyle(
                     fontSize: isSmallScreen ? 18 : 22,
                     fontWeight: FontWeight.bold,
@@ -154,16 +200,18 @@ class ChildProfileScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: isSmallScreen ? 6 : 8),
-                _buildInfoRow(Icons.cake_rounded, child['age'], isSmallScreen),
+                _buildInfoRow(Icons.cake_rounded, child.ageText, isSmallScreen),
                 const SizedBox(height: 4),
                 _buildInfoRow(
                   isMale ? Icons.male_rounded : Icons.female_rounded,
-                  child['gender'],
+                  child.genderText,
                   isSmallScreen,
                 ),
-                const SizedBox(height: 4),
-                _buildInfoRow(
-                    Icons.class_rounded, child['class'], isSmallScreen),
+                if (child.className != null) ...[
+                  const SizedBox(height: 4),
+                  _buildInfoRow(
+                      Icons.class_rounded, child.className!, isSmallScreen),
+                ],
               ],
             ),
           ),

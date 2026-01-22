@@ -25,11 +25,26 @@ class TeacherProvider extends ChangeNotifier {
 
     try {
       _profile = await _repository.getTeacherByUserId(userId);
+      
+      // إذا لم يوجد سجل، نحاول إنشاء skeleton
       if (_profile == null) {
-        _error = 'لم يتم العثور على ملف المعلمة';
+        try {
+          await _repository.createTeacherSkeleton(userId);
+          // نحاول التحميل مرة أخرى بعد الإنشاء بتأخير صغير
+          await Future.delayed(const Duration(milliseconds: 500));
+          _profile = await _repository.getTeacherByUserId(userId);
+        } catch (createError) {
+          // لا نوقف العملية حتى لو فشل الإنشاء
+          print('Warning: Could not create teacher skeleton: $createError');
+        }
+        
+        if (_profile == null) {
+          _error = 'لم يتم العثور على ملف المعلمة. يرجى المحاولة لاحقاً.';
+        }
       }
     } catch (e) {
-      _error = 'حدث خطأ أثناء تحميل البيانات: $e';
+      _error = 'حدث خطأ أثناء تحميل البيانات: ${e.toString()}';
+      print('TeacherProvider loadProfile error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

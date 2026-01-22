@@ -1,11 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/models.dart';
+import '../../repositories/children_repository.dart';
+import '../../repositories/guardian_repository.dart';
 
-class ContactScreen extends StatelessWidget {
+class ContactScreen extends StatefulWidget {
   final String? childId;
 
   const ContactScreen({super.key, this.childId});
+
+  @override
+  State<ContactScreen> createState() => _ContactScreenState();
+}
+
+class _ContactScreenState extends State<ContactScreen> {
+  late Future<GuardianModel?> _guardianFuture;
+  final ChildrenRepository _childrenRepository = ChildrenRepository();
+  final GuardianRepository _guardianRepository = GuardianRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _guardianFuture = _fetchGuardianInfo();
+  }
+
+  Future<GuardianModel?> _fetchGuardianInfo() async {
+    if (widget.childId == null) return null;
+    try {
+      final child = await _childrenRepository.getChildById(widget.childId!);
+      if (child != null) {
+        return await _guardianRepository.getGuardianById(child.guardianId);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching contact info: $e');
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,14 +45,6 @@ class ContactScreen extends StatelessWidget {
     final screenWidth = size.width;
     final isSmallScreen = screenWidth < 360;
     final padding = screenWidth * 0.04;
-
-    final Map<String, dynamic> contactInfo = {
-      'motherName': 'فاطمة أحمد',
-      'phone': '+963 912 345 678',
-      'email': 'fatima@email.com',
-      'relationship': 'الأم',
-      'address': 'دمشق - المزة - جانب الحديقة',
-    };
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -31,40 +55,77 @@ class ContactScreen extends StatelessWidget {
           centerTitle: true,
           elevation: 0,
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.all(padding),
-          child: Column(
-            children: [
-              _buildContactHeader(contactInfo, isSmallScreen),
-              SizedBox(height: isSmallScreen ? 18 : 24),
-              _buildContactOption(
-                icon: Icons.phone_rounded,
-                title: 'الهاتف',
-                subtitle: contactInfo['phone'],
-                color: AppColors.success,
-                isSmallScreen: isSmallScreen,
-                onTap: () => _makePhoneCall(contactInfo['phone']),
+        body: FutureBuilder<GuardianModel?>(
+          future: _guardianFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('حدث خطأ: ${snapshot.error}'),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data == null) {
+              return const Center(
+                child: Text('لم يتم العثور على معلومات التواصل'),
+              );
+            }
+
+            final guardian = snapshot.data!;
+
+            // Prepare data for UI
+            final contactInfo = {
+              'motherName':
+                  guardian.name.isNotEmpty ? guardian.name : 'غير متوفر',
+              'phone': guardian.phone.isNotEmpty ? guardian.phone : 'غير متوفر',
+              'email': guardian.email.isNotEmpty ? guardian.email : 'غير متوفر',
+              'relationship': guardian.relationship,
+              'address': guardian.address ?? 'غير متوفر',
+              'emergencyPhone': guardian.emergencyPhone ?? 'غير متوفر',
+            };
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.all(padding),
+              child: Column(
+                children: [
+                  _buildContactHeader(contactInfo, isSmallScreen),
+                  SizedBox(height: isSmallScreen ? 18 : 24),
+                  if (guardian.phone.isNotEmpty)
+                    _buildContactOption(
+                      icon: Icons.phone_rounded,
+                      title: 'الهاتف',
+                      subtitle: contactInfo['phone'] as String,
+                      color: AppColors.success,
+                      isSmallScreen: isSmallScreen,
+                      onTap: () => _makePhoneCall(guardian.phone),
+                    ),
+                  if (guardian.email.isNotEmpty)
+                    _buildContactOption(
+                      icon: Icons.email_rounded,
+                      title: 'البريد الإلكتروني',
+                      subtitle: contactInfo['email'] as String,
+                      color: AppColors.primary,
+                      isSmallScreen: isSmallScreen,
+                      onTap: () => _sendEmail(guardian.email),
+                    ),
+                  if (guardian.phone.isNotEmpty)
+                    _buildContactOption(
+                      icon: Icons.message_rounded,
+                      title: 'رسالة نصية',
+                      subtitle: 'إرسال رسالة SMS',
+                      color: AppColors.accent,
+                      isSmallScreen: isSmallScreen,
+                      onTap: () => _sendSMS(guardian.phone),
+                    ),
+                  SizedBox(height: isSmallScreen ? 18 : 24),
+                  _buildInfoCard(contactInfo, isSmallScreen),
+                ],
               ),
-              _buildContactOption(
-                icon: Icons.email_rounded,
-                title: 'البريد الإلكتروني',
-                subtitle: contactInfo['email'],
-                color: AppColors.primary,
-                isSmallScreen: isSmallScreen,
-                onTap: () => _sendEmail(contactInfo['email']),
-              ),
-              _buildContactOption(
-                icon: Icons.message_rounded,
-                title: 'رسالة نصية',
-                subtitle: 'إرسال رسالة SMS',
-                color: AppColors.accent,
-                isSmallScreen: isSmallScreen,
-                onTap: () => _sendSMS(contactInfo['phone']),
-              ),
-              SizedBox(height: isSmallScreen ? 18 : 24),
-              _buildInfoCard(contactInfo, isSmallScreen),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -152,9 +213,7 @@ class ContactScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(isSmallScreen ? 14 : 16),
         boxShadow: const [
           BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 8,
-              offset: Offset(0, 2))
+              color: AppColors.shadow, blurRadius: 8, offset: Offset(0, 2))
         ],
       ),
       child: ListTile(
@@ -201,9 +260,7 @@ class ContactScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
         boxShadow: const [
           BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 12,
-              offset: Offset(0, 4))
+              color: AppColors.shadow, blurRadius: 12, offset: Offset(0, 4))
         ],
       ),
       child: Column(
@@ -232,7 +289,8 @@ class ContactScreen extends StatelessWidget {
           const Divider(height: 1),
           SizedBox(height: isSmallScreen ? 12 : 16),
           _buildInfoRow('العلاقة', info['relationship'], isSmallScreen),
-          _buildInfoRow('رقم الطوارئ', info['phone'], isSmallScreen),
+          _buildInfoRow('رقم الطوارئ', info['emergencyPhone'],
+              isSmallScreen), // Fixed key
           _buildInfoRow('عنوان السكن', info['address'], isSmallScreen),
         ],
       ),

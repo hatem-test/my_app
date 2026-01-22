@@ -165,18 +165,12 @@ class AuthService {
       createdAt: DateTime.now(),
     );
 
-    // 1. إعادة إنشاء سجل المستخدم
+    // 1. إعادة إنشاء سجل المستخدم فقط
+    // تم تخطي إنشاء سجلات role skeleton أثناء تسجيل الدخول لتجنب التأخير والصراعات مع RLS
     try {
       await _repository.createUserProfile(newUser);
-
-      // 2. إنشاء سجل الدور (ولي أمر أو معلمة) إذا لم يكن موجوداً
-      if (newUser.role == UserRole.mother) {
-        await _guardianRepository.createGuardianSkeleton(newUser.id);
-      } else if (newUser.role == UserRole.teacher) {
-        await _teacherRepository.createTeacherSkeleton(newUser.id);
-      }
     } catch (e) {
-      debugPrint('Error syncing profile records: $e');
+      debugPrint('Error syncing user profile: $e');
       // لا نوقف العملية لأن ملف Auth موجود بالفعل
     }
 
